@@ -1,0 +1,10 @@
+transformers
+torch
+scikit-learn
+numpy
+pandas
+fastapi
+uvicorn
+python-dotenv
+requests
+jsonlines
