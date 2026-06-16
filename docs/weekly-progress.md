@@ -1,7 +1,7 @@
 # Weekly Progress Log: Prompt Injection Detection and Defence for LLM-Based Applications
 
-**Student:** _[Fill in your name]_
-**GitHub username:** _[Fill in]_
+**Student:**Ehsan Ullah Jamshaid
+**GitHub username:** https://github.com/ejamshaidbese24seecs-glitch
 
 ---
 
@@ -25,7 +25,11 @@ Be honest — problems and blockers are normal and help your supervisor support 
 - [ ] Identified 5 related papers / tools / datasets
 
 ### Personal Introduction
-_Write 3–5 sentences about your background, skills, and what you hope to learn._
+My name is Ehsan Ullah and I am a Software Engineering student interested in AI and cybersecurity. 
+I have basic experience with Python and machine learning concepts. 
+I joined this internship to gain hands-on experience in AI security, specifically around 
+prompt injection attacks and how to defend against them. 
+I hope to build practical skills in LLM security and contribute meaningful research to the team.
 
 ### Problems / Blockers
 _Describe any issues you faced. Did you solve them? How?_
