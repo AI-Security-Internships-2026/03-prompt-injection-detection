@@ -1,7 +1,7 @@
 # Weekly Progress Log: Prompt Injection Detection and Defence for LLM-Based Applications
 
 **Student:**Ehsan Ullah Jamshaid
-**GitHub username:** https://github.com/ejamshaidbese24seecs-glitch
+**GitHub username:** ejamshaidbese24seecs-glitch
 
 ---
 
@@ -14,15 +14,17 @@ Be honest — problems and blockers are normal and help your supervisor support 
 
 ## Week 1
 
-**Branch:** `your-name-week-01`
-**PR link:** _[Add link after opening PR]_
+**Branch:** `ehsanullah-week-01`
+**PR link:** [_\[Add link after opening PR\]_](https://github.com/AI-Security-Internships-2026/03-prompt-injection-detection/pull/1)
 
 ### Completed this week
-- [ ] Read README and proposal
-- [ ] Set up local environment (Python venv, dependencies)
-- [ ] Ran `src/main.py` successfully
-- [ ] Wrote personal introduction (below)
-- [ ] Identified 5 related papers / tools / datasets
+
+
+- [X] Read README and proposal
+- [X] Set up local environment (Python venv, dependencies)
+- [X] Ran `src/main.py` successfully
+- [X] Wrote personal introduction (below)
+- [X] Identified 5 related papers / tools / datasets
 
 ### Personal Introduction
 My name is Ehsan Ullah and I am a Software Engineering student interested in AI and cybersecurity. 
