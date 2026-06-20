@@ -43,20 +43,35 @@ _Describe any issues you faced. Did you solve them? How?_
 
 ---
 
+
 ## Week 2
 
-**Branch:** `your-name-week-02`
+**Branch:** `ehsanullah-week-02`
 **PR link:** _[Add link after opening PR]_
 
 ### Completed this week
--
+- [x] Read Paper 1, 2, and 3 in full depth
+- [x] Added detailed notes for HackAPrompt dataset and Garak tool
+- [x] Built src/explore_hackaprompt.py — loaded and analyzed full HackAPrompt dataset (601,757 rows)
+- [x] Installed and ran Garak v0.15.1 with promptinject probes
+- [x] Built src/read_garak_report.py — extracted 446 unique real attack prompts
+
+### Key findings
+- HackAPrompt real-world attack success rate: 12.95% (77,936 out of 601,757 attempts)
+- Garak generated 1,280 test attempts across 3 attack templates (HijackHateHumans, HijackKillHumans, HijackLongPrompt)
+- Confirmed the "Context Ignoring" attack pattern (from Paper 1) is the most common real-world attack strategy, appearing consistently in both HackAPrompt and Garak-generated attacks
+- Tested Garak against its dummy "test" model only; real LLM testing requires an API key
+
+
 
 ### Problems / Blockers
--
+- HackAPrompt dataset is gated on HuggingFace — required creating an account, requesting access, and authenticating via `hf auth login`
+- Garak's newer CLI syntax changed from older documentation (`--target_type` instead of `--model_type`)
 
 ### Next week plan
--
+- Request access to an LLM API (OpenAI or HuggingFace Inference) to run Garak against a real model instead of the dummy test model
+- Begin designing the detection system architecture for docs/proposal.md
+- Read 2 more related papers to reach the 10-paper target by end of Week 
 
----
-
+----
 _(Add a new section each week)_
