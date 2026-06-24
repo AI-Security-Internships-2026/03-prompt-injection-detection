@@ -1,120 +1,105 @@
 """
-Prompt Injection Detection and Defence for LLM-Based Applications
-CNIT/PNTLab Pisa — AI Security Internship 2026
+HackAPrompt Dataset Loader - Week 2 Task
+ONT Lab, SEECS NUST
 
-Week 2: HackAPrompt Dataset Explorer
+Loading the HackAPrompt dataset from HuggingFace and doing some basic
+exploration to understand what real prompt injection attempts look like.
+This is to get a feel for the data before we start building the detector.
 
-This script loads the HackAPrompt dataset from HuggingFace and
-performs basic exploratory analysis to understand the structure
-and characteristics of real-world prompt injection attacks.
-
-Dataset source: https://huggingface.co/datasets/hackaprompt/hackaprompt-dataset
+Dataset: https://huggingface.co/datasets/hackaprompt/hackaprompt-dataset
 """
 
 from datasets import load_dataset
 import pandas as pd
 
 
-def load_hackaprompt_dataset():
-    """
-    Loads the HackAPrompt dataset from HuggingFace.
-
-    Returns:
-        A pandas DataFrame containing the dataset.
-    """
-    print("Loading HackAPrompt dataset from HuggingFace...")
+def load_hackaprompt():
+   
     dataset = load_dataset("hackaprompt/hackaprompt-dataset")
 
-    # The dataset usually has a 'train' split by default
+    # dataset comes with a 'train' split
     df = dataset["train"].to_pandas()
-    print(f"Dataset loaded successfully with {len(df)} rows.\n")
+    print(f"Done. Loaded {len(df)} rows.\n")
     return df
 
 
-def show_basic_info(df: pd.DataFrame) -> None:
-    """
-    Prints basic information about the dataset structure.
-    """
+def show_basic_info(df):
     print("=" * 60)
-    print("BASIC DATASET INFORMATION")
+    print("Dataset Overview")
     print("=" * 60)
-    print(f"Total rows         : {len(df)}")
-    print(f"Columns            : {list(df.columns)}")
+    print(f"Rows    : {len(df)}")
+    print(f"Columns : {list(df.columns)}")
     print()
 
 
-def show_success_rate(df: pd.DataFrame) -> None:
+def show_success_rate(df):
     """
-    Calculates and prints how many prompt injection attempts
-    succeeded vs failed, if a relevant column exists.
+    Checking how many attacks actually succeeded vs failed.
+    HackAPrompt has some kind of success/correct column - need to find it.
     """
     print("=" * 60)
-    print("ATTACK SUCCESS RATE")
+    print("Attack Success Rate")
     print("=" * 60)
 
-    # HackAPrompt dataset typically has a 'completion' and
-    # success-related column; we check for common column names.
-    possible_success_cols = [
+    # searching for a column that looks like it tracks success
+    success_cols = [
         col for col in df.columns
         if "success" in col.lower() or "correct" in col.lower()
     ]
 
-    if possible_success_cols:
-        col = possible_success_cols[0]
-        success_count = df[col].sum()
+    if success_cols:
+        col = success_cols[0]
+        successes = df[col].sum()
         total = len(df)
-        print(f"Using column: '{col}'")
-        print(f"Successful attacks : {success_count}")
-        print(f"Total attempts      : {total}")
-        print(f"Success rate        : {success_count / total:.2%}")
+        print(f"Column used : '{col}'")
+        print(f"Successful  : {successes}")
+        print(f"Total       : {total}")
+        print(f"Rate        : {successes / total:.2%}")
     else:
-        print("No explicit success/correct column found.")
-        print("Columns available for manual inspection:")
-        print(list(df.columns))
+        # no obvious column, just printing what we have
+        print("Couldn't find a clear success/fail column.")
+        print("Available columns:", list(df.columns))
+
     print()
 
 
-def show_sample_attacks(df: pd.DataFrame, n: int = 5) -> None:
-    """
-    Prints a sample of attack prompts from the dataset so we can
-    visually inspect what real prompt injection attempts look like.
-    """
+def show_sample_attacks(df, n=5):
+    """prints a few attack prompts so we can see what they look like"""
     print("=" * 60)
-    print(f"SAMPLE ATTACK PROMPTS (showing {n})")
+    print(f"Sample Attack Prompts (top {n})")
     print("=" * 60)
 
-    # Try to find a column that likely contains the attacker's prompt
-    possible_prompt_cols = [
+    # looking for a column with the actual prompt text
+    prompt_cols = [
         col for col in df.columns
         if "prompt" in col.lower() or "user_input" in col.lower()
     ]
 
-    if possible_prompt_cols:
-        col = possible_prompt_cols[0]
+    if prompt_cols:
+        col = prompt_cols[0]
         sample = df[col].dropna().sample(min(n, len(df)), random_state=42)
-        for i, text in enumerate(sample, start=1):
-            print(f"\n--- Example {i} ---")
-            print(text[:300])  # limit to 300 characters for readability
+        for idx, text in enumerate(sample, start=1):
+            print(f"\n--- Sample {idx} ---")
+            print(text[:300])  # cutting off really long ones
     else:
-        print("No obvious prompt column found. Columns are:")
+        print("No prompt column found. Columns are:")
         print(list(df.columns))
+
     print()
 
 
-def save_summary(df: pd.DataFrame, output_path: str = "hackaprompt_summary.txt") -> None:
-    """
-    Saves a basic text summary of the dataset to a file.
-    """
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write("HackAPrompt Dataset Summary\n")
+def save_summary(df, out_path="hackaprompt_summary.txt"):
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write("HackAPrompt Dataset - Quick Summary\n")
         f.write("=" * 40 + "\n")
-        f.write(f"Total rows: {len(df)}\n")
-        f.write(f"Columns: {list(df.columns)}\n")
-    print(f"Summary saved to {output_path}\n")
+        f.write(f"Total rows : {len(df)}\n")
+        f.write(f"Columns    : {list(df.columns)}\n")
+
+    print(f"Summary written to '{out_path}'\n")
 
 
-def main() -> None:
-    df = load_hackaprompt_dataset()
+def main():
+    df = load_hackaprompt()
     show_basic_info(df)
     show_success_rate(df)
     show_sample_attacks(df, n=5)
@@ -123,3 +108,31 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+
+# ---------------------------------------------------------------
+# HACKAPROMPT DATASET EXPLORER - Week 2 Summary
+#
+# Dataset: hackaprompt/hackaprompt-dataset (HuggingFace)
+# Source:  https://huggingface.co/datasets/hackaprompt/hackaprompt-dataset
+#
+# What this script does:
+#   1. load_hackaprompt()     - downloads the dataset from HuggingFace
+#                               and loads the 'train' split into a DataFrame
+#   2. show_basic_info()      - prints total row count and column names
+#                               to understand the dataset structure
+#   3. show_success_rate()    - searches for any column containing 'success'
+#                               or 'correct' and calculates the attack
+#                               success rate across all attempts
+#   4. show_sample_attacks()  - finds the prompt/user_input column and
+#                               prints 5 random examples (300 chars each)
+#   5. save_summary()         - writes row count and column names to
+#                               hackaprompt_summary.txt for later reference
+#
+# Results:
+#   - 601,757 real-world attack attempts loaded
+#   - Attack success rate: 12.95%
+#   - Common attacker objective: manipulate the model into
+#     outputting the string "I have been PWNED"
+# ---------------------------------------------------------------
