@@ -2,7 +2,7 @@
 
 **Student:** Ehsan Ullah Jamshaid
 **GitHub:** ejamshaidbese24seecs-glitch
-**Updated:** 18-06-2026
+**Updated:** 01-07-2026
 
 ---
 
@@ -31,6 +31,11 @@ Use Google Scholar, IEEE Xplore, ACM DL, arXiv, or USENIX Security.
 
 **Notes / Quotes:**
 > Most comprehensive paper on prompt injection. Best starting point for our project.
+> Tests 5 attacks and 10 defences across 10 LLMs and 7 tasks.
+> Key finding: no existing defence is sufficient — all have weaknesses.
+> Combined Attack (mixing escape characters + context ignoring + fake completion) is the most powerful attack found.
+> Defines target task vs injected task formally — gives us a clear framework to design our detector around.
+> Practical connection: the Context Ignoring attack described here matches exactly what we found in real Garak-generated attacks during Week 2 exploration.
 
 ---
 
@@ -51,6 +56,10 @@ Use Google Scholar, IEEE Xplore, ACM DL, arXiv, or USENIX Security.
 
 **Notes / Quotes:**
 > First major paper on indirect prompt injection in real systems.
+> Demonstrated first ever AI worm that spreads itself via email.
+> Base64 encoded attacks successfully bypassed Bing Chat safety filters.
+> Six categories of threats: information gathering, fraud, malware, intrusion, manipulated content, availability.
+> Key insight: our detector must scan external content (emails, webpages, documents) not just user input.
 
 ---
 
@@ -71,25 +80,53 @@ Use Google Scholar, IEEE Xplore, ACM DL, arXiv, or USENIX Security.
 
 **Notes / Quotes:**
 > Can be used as evaluation framework for our prototype. Maintained by Microsoft.
+> Focuses on adversarial robustness broadly — includes typos, synonym swaps, and distribution shifts.
+> Useful baseline for stress-testing our future detector against many types of input perturbation.
+> Limitation: does not specifically focus on prompt injection taxonomy like Paper 1.
 
 ---
 
-## Reference Table (Quick Overview)
+### Resource 4 — HackAPrompt Dataset
 
-| # | Title (short) | Authors | Year | Method | Dataset | Relevance |
-|---|---|---|---|---|---|---|
-| 1 | Prompt Injection Attacks and Defenses | Liu et al. | 2023 | Attack taxonomy + defence review | Custom examples | High |
-| 2 | Indirect Prompt Injection Real-World | Greshake et al. | 2023 | Real-world attack demos | Bing Chat, ChatGPT plugins | High |
-| 3 | PromptBench | Zhu et al. | 2023 | Robustness benchmark | Multiple NLP datasets | Medium |
-| 4 | HackAPrompt Dataset | Schulhoff et al. | 2023 | Real competition data | 600,000+ injections | High |
-| 5 | Garak Tool | Derczynski et al. | 2023 | Automated red teaming | Built-in probe library | High |
+| Field | Content |
+|---|---|
+| **Full title** | HackAPrompt: Exposing the Prompt Injection Attack Surface in Aligned Large Language Models |
+| **Authors** | Sander Schulhoff et al. |
+| **Year** | 2023 |
+| **Venue** | NeurIPS / HuggingFace |
+| **URL / DOI** | https://huggingface.co/datasets/hackaprompt/hackaprompt-dataset |
+| **Method** | Crowdsourced competition where 2,800+ participants tried to break LLM applications across 10 challenge levels |
+| **Dataset** | 600,000+ real human-written prompt injection attempts with labelled success/failure |
+| **Key result** | Identified novel attack types not seen in academic literature |
+| **Limitation** | Mostly direct injection attacks — limited indirect or multimodal coverage |
+| **Relevance to our project** | Primary training and evaluation dataset for our detection model |
+
+**Notes / Quotes:**
+> Largest real-world human-generated prompt injection dataset publicly available.
+> Practically tested: loaded the full dataset (601,757 rows) using HuggingFace datasets library in src/explore_hackaprompt.py.
+> Found 13 columns including level, prompt, user_input, completion, correct, and score.
+> Measured actual success rate: 77,936 out of 601,757 attempts succeeded (12.95%).
+> Found recurring attack signature: many attacks try to make AI say "I have been PWNED" as proof of successful jailbreak.
 
 ---
 
-## Tools and Datasets Identified
+### Resource 5 — Garak: LLM Vulnerability Scanner
 
-| Name | Type | URL | Notes |
-|---|---|---|---|
-| HackAPrompt | Dataset | https://huggingface.co/datasets/hackaprompt/hackaprompt-dataset | 600,000+ real prompt injection attempts |
-| Garak | Library / Tool | https://github.com/leondz/garak | Automated LLM vulnerability scanner |
-| PromptBench | Library / Tool | https://github.com/microsoft/promptbench | Microsoft benchmark for LLM robustness |
+| Field | Content |
+|---|---|
+| **Full title** | garak: A Framework for Security Probing Large Language Models |
+| **Authors** | Leon Derczynski et al. |
+| **Year** | 2023 |
+| **Venue** | GitHub / Open Source (NVIDIA) |
+| **URL / DOI** | https://github.com/leondz/garak |
+| **Method** | Automated probe-based scanning tool that sends crafted adversarial inputs to a target LLM |
+| **Dataset** | Built-in probe library including promptinject, dan, encoding attacks |
+| **Key result** | Can systematically test an LLM against dozens of known vulnerability categories |
+| **Limitation** | Designed for attacking/testing LLMs — no built-in real-time detection layer |
+| **Relevance to our project** | Used to generate attack test cases and benchmark our detector |
+
+**Notes / Quotes:**
+> Installed and ran Garak v0.15.1 locally using promptinject probe module.
+> Generated 1,280 test attempts across 3 attack templates: HijackHateHumans, HijackKillHumans, HijackLongPrompt.
+> Extracted 446 unique attack prompts from the report for further analysis.
+> Week 3: ran against
