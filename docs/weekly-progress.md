@@ -184,3 +184,10 @@ I hope to build practical skills in LLM security and contribute meaningful resea
 - Prepare datasets/custom_attacks.csv and garak_prompts.txt
 - Retrain Week 5's winning model on combined dataset
 - Measure Garak/custom recall improvement directly
+
+### Note on reproducibility
+Train/test splits are not committed (124MB exceeds GitHub's 100MB limit).
+They are deterministically regenerated via `random_state=42` — running
+`python src/ml_detector.py train --model <name>` reproduces the exact
+same split every time.
+
