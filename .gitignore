@@ -28,8 +28,8 @@ Thumbs.db
 *.ipynb_metadata
 
 # Datasets and large files (use DVC or document sources in datasets/README.md)
-datasets/**/*.csv
-datasets/**/*.json
+!datasets/train_split.csv
+!datasets/test_split.csv
 datasets/**/*.parquet
 datasets/**/*.h5
 datasets/**/*.hdf5
@@ -65,3 +65,9 @@ credentials/
 # Results that can be reproduced
 experiments/results/*.png
 experiments/results/*.pdf
+
+!datasets/train_split.csv
+!datasets/test_split.csv
+
+datasets/train_split.csv
+datasets/test_split.csv
