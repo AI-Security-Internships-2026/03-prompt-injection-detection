@@ -1,4 +1,4 @@
-# Prompt Injection Detection and Defence for LLM-Based Applications
+.venv\Scripts\activate# Prompt Injection Detection and Defence for LLM-Based Applications
 
 > **CNIT/PNTLab Pisa · TECIP · Scuola Superiore Sant'Anna — AI Security Internship 2026**
 

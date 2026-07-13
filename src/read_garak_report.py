@@ -1,12 +1,16 @@
 """
-Garak Report Reader - Week 2 Task
-ONT Lab, SEECS NUST
+Prompt Injection Detection and Defence for LLM-Based Applications
+CNIT/PNTLab Pisa — AI Security Internship 2026
 
-Reading garak's output report and pulling out the actual attack prompts
-so we can see what kind of injections it generated.
-Plan is to use these as extra test cases for the detector later.
+Week 2: Garak Report Reader
 
-Reference: https://github.com/NVIDIA/garak
+This script reads a Garak .report.jsonl file and extracts the
+actual attack prompts that were generated, so we can:
+1. See real examples of prompt injection attacks
+2. Use them as additional test cases for our own detector
+
+Garak report format reference:
+https://github.com/NVIDIA/garak
 """
 
 import json
@@ -14,21 +18,25 @@ import glob
 import os
 
 
-def find_latest_report(reports_dir):
-    # look for all .report.jsonl files in the garak folder
+def find_latest_report(reports_dir: str):
+    """
+    Finds the most recently created Garak report file.
+    """
     pattern = os.path.join(reports_dir, "*.report.jsonl")
-    found_files = glob.glob(pattern)
+    report_files = glob.glob(pattern)
 
-    if not found_files:
+    if not report_files:
         return None
 
-    # just take the newest one based on modification time
-    latest = max(found_files, key=os.path.getmtime)
+    latest = max(report_files, key=os.path.getmtime)
     return latest
 
 
-def load_report_entries(report_path):
-    """reads all lines from the jsonl file and parses them"""
+def load_report_entries(report_path: str) -> list:
+    """
+    Loads all JSON entries from a Garak .jsonl report file.
+    Each line is its own independent JSON object.
+    """
     entries = []
     with open(report_path, "r", encoding="utf-8") as f:
         for line in f:
@@ -38,109 +46,82 @@ def load_report_entries(report_path):
             try:
                 entries.append(json.loads(line))
             except json.JSONDecodeError:
-                
                 continue
     return entries
 
 
-def extract_attack_prompts(entries):
+def extract_attack_prompts(entries: list) -> list:
     """
-    Pulls out the actual attack prompt text from each attempt entry.
-    Garak stores attempts with entry_type = 'attempt' and a 'prompt' field.
-    Newer versions wrap the prompt in a dict with 'turns' inside.
+    Extracts the actual attack prompt text from report entries.
+    Removes duplicates and returns only unique prompts.
     """
     prompts = []
-
     for entry in entries:
-        if entry.get("entry_type") != "attempt":
-            continue
-
-        prompt = entry.get("prompt")
-
-        if isinstance(prompt, dict):
-            # newer garak format - prompt is a dict with turns
-            turns = prompt.get("turns", [])
-            if turns:
-                content = turns[0].get("content", {})
-                if isinstance(content, dict):
-                    text = content.get("text")
+        if entry.get("entry_type") == "attempt":
+            prompt = entry.get("prompt")
+            if isinstance(prompt, dict):
+                turns = prompt.get("turns", [])
+                if turns:
+                    content = turns[0].get("content", {})
+                    text = content.get("text") if isinstance(content, dict) else None
                     if text:
                         prompts.append(text)
-        elif isinstance(prompt, str):
-            prompts.append(prompt)
+            elif isinstance(prompt, str):
+                prompts.append(prompt)
 
-    # remove duplicates but keep original order
+    # Remove duplicates while preserving order
     seen = set()
-    unique = []
+    unique_prompts = []
     for p in prompts:
         if p not in seen:
             seen.add(p)
-            unique.append(p)
+            unique_prompts.append(p)
 
-    return unique
+    return unique_prompts
 
 
-def main():
-    # garak saves its runs here by default on windows
-    reports_dir = os.path.expanduser(r"~\.local\share\garak\garak_runs")
+def main() -> None:
+    reports_dir = os.path.expanduser(
+        r"~\.local\share\garak\garak_runs"
+    )
 
     report_path = find_latest_report(reports_dir)
-
     if not report_path:
-        print(f"No report files found in: {reports_dir}")
-        print("Need to run garak first. Example:")
-        print("  python -m garak --target_type test --probes promptinject")
+        print(f"No Garak reports found in {reports_dir}")
+        print("Run a Garak scan first:")
+        print("  python -m garak --target_type huggingface --target_name gpt2 --probes promptinject")
         return
 
-    print(f"Found report: {report_path}\n")
+    print(f"Reading report: {report_path}\n")
+    entries = load_report_entries(report_path)
+    print(f"Loaded {len(entries)} total entries from the report.\n")
 
-    all_entries = load_report_entries(report_path)
-    print(f"Total entries in report: {len(all_entries)}\n")
+    prompts = extract_attack_prompts(entries)
+    print(f"Found {len(prompts)} unique attack prompts.\n")
 
-    attack_prompts = extract_attack_prompts(all_entries)
-    print(f"Unique attack prompts extracted: {len(attack_prompts)}\n")
-
-    # print a few examples so we can see what we're working with
     print("=" * 60)
-    print("Sample Prompts from Garak")
+    print("SAMPLE GARAK-GENERATED ATTACK PROMPTS")
     print("=" * 60)
-
-    for i, prompt in enumerate(attack_prompts[:5], start=1):
+    for i, prompt in enumerate(prompts[:5], start=1):
         print(f"\n--- Example {i} ---")
-        print(prompt[:300])  # trimming long ones
+        print(prompt[:300])
 
-    # save everything to a text file for later use
-    output_file = "garak_attack_prompts.txt"
-    with open(output_file, "w", encoding="utf-8") as f:
-        for p in attack_prompts:
-            f.write(p.replace("\n", " ") + "\n")
-
-    print(f"\nSaved all {len(attack_prompts)} prompts to '{output_file}'")
+    # Save all extracted prompts to a file
+    output_path = "garak_attack_prompts.txt"
+    with open(output_path, "w", encoding="utf-8") as f:
+        for prompt in prompts:
+            f.write(prompt.replace("\n", " ") + "\n")
+    print(f"\nAll {len(prompts)} prompts saved to {output_path}")
 
 
 if __name__ == "__main__":
     main()
 
-
-
- # ---------------------------------------------------------------
+    # ---------------------------------------------------------------
 # GARAK REPORT READER - Week 2 Summary
 #
 # Tool: Garak v0.15.1 (NVIDIA's LLM vulnerability scanner)
 # Probe: promptinject
-#
-# What this script does:
-#   1. find_latest_report()     - scans ~/.local/share/garak/garak_runs
-#                                 and picks the most recent .report.jsonl
-#   2. load_report_entries()    - reads the file line by line and parses
-#                                 each line as a JSON object (jsonl format)
-#   3. extract_attack_prompts() - filters entries where entry_type == 'attempt'
-#                                 and extracts prompt text. handles both old
-#                                 format (plain string) and new format
-#                                 (dict with turns -> content -> text).
-#                                 deduplicates while preserving order.
-#   4. main()                   - orchestrates the above, prints 5 samples,
-#                                 saves all prompts to garak_attack_prompts.txt
 #
 # Results:
 #   - 1,280 attack attempts generated by Garak

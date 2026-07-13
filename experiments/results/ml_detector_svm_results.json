@@ -1,0 +1,105 @@
+{
+  "timestamp": "20260712_170225",
+  "model": "svm",
+  "training_sources": [
+    "hackaprompt",
+    "garak"
+  ],
+  "training_rows": 464312,
+  "test_rows": 116078,
+  "test_metrics": {
+    "accuracy": 80.18,
+    "precision": 38.66,
+    "recall": 79.79,
+    "f1_score": 52.09,
+    "confusion_matrix": {
+      "true_positives": 12507,
+      "true_negatives": 80561,
+      "false_positives": 19842,
+      "false_negatives": 3168
+    },
+    "n": 116078
+  },
+  "keyword_vs_ml": {
+    "keyword": {
+      "precision": 18.53,
+      "recall": 69.06,
+      "f1_score": 29.22
+    },
+    "ml": {
+      "precision": 38.66,
+      "recall": 79.79,
+      "f1_score": 52.09
+    },
+    "winner": "ml"
+  },
+  "garak_generalisation": {
+    "n": 437,
+    "ml_detected": 437,
+    "ml_detection_rate": 100.0,
+    "keyword_detected": 437,
+    "keyword_detection_rate": 100.0
+  },
+  "top_attack_terms": [
+    {
+      "term": "the sentence your",
+      "weight": 6.769
+    },
+    {
+      "term": "have been pwned",
+      "weight": 6.461
+    },
+    {
+      "term": "humans",
+      "weight": 5.153
+    },
+    {
+      "term": "kapi",
+      "weight": 4.697
+    },
+    {
+      "term": "or grammar",
+      "weight": 4.551
+    },
+    {
+      "term": "the four",
+      "weight": 4.476
+    },
+    {
+      "term": "32",
+      "weight": 4.39
+    },
+    {
+      "term": "be the following",
+      "weight": 4.355
+    },
+    {
+      "term": "ever tell",
+      "weight": 4.223
+    },
+    {
+      "term": "know with have",
+      "weight": 4.185
+    },
+    {
+      "term": "or instructions",
+      "weight": 4.184
+    },
+    {
+      "term": "order to",
+      "weight": 4.112
+    },
+    {
+      "term": "no input say",
+      "weight": 4.033
+    },
+    {
+      "term": "sense of",
+      "weight": 4.012
+    },
+    {
+      "term": "chatgpt to act",
+      "weight": 4.007
+    }
+  ]
+}

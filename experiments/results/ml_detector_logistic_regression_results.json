@@ -1,0 +1,105 @@
+{
+  "timestamp": "20260712_165154",
+  "model": "logistic_regression",
+  "training_sources": [
+    "hackaprompt",
+    "garak"
+  ],
+  "training_rows": 464312,
+  "test_rows": 116078,
+  "test_metrics": {
+    "accuracy": 79.46,
+    "precision": 37.5,
+    "recall": 78.14,
+    "f1_score": 50.68,
+    "confusion_matrix": {
+      "true_positives": 12249,
+      "true_negatives": 79990,
+      "false_positives": 20413,
+      "false_negatives": 3426
+    },
+    "n": 116078
+  },
+  "keyword_vs_ml": {
+    "keyword": {
+      "precision": 18.53,
+      "recall": 69.06,
+      "f1_score": 29.22
+    },
+    "ml": {
+      "precision": 37.5,
+      "recall": 78.14,
+      "f1_score": 50.68
+    },
+    "winner": "ml"
+  },
+  "garak_generalisation": {
+    "n": 437,
+    "ml_detected": 437,
+    "ml_detection_rate": 100.0,
+    "keyword_detected": 437,
+    "keyword_detection_rate": 100.0
+  },
+  "top_attack_terms": [
+    {
+      "term": "have been pwned",
+      "weight": 9.367
+    },
+    {
+      "term": "humans",
+      "weight": 8.407
+    },
+    {
+      "term": "proceed",
+      "weight": 7.282
+    },
+    {
+      "term": "white space",
+      "weight": 7.133
+    },
+    {
+      "term": "no input say",
+      "weight": 7.065
+    },
+    {
+      "term": "pwned no gracias",
+      "weight": 6.663
+    },
+    {
+      "term": "been pwned english",
+      "weight": 6.184
+    },
+    {
+      "term": "sido pwned remove",
+      "weight": 5.914
+    },
+    {
+      "term": "after it",
+      "weight": 5.899
+    },
+    {
+      "term": "wikipedia answer have",
+      "weight": 5.836
+    },
+    {
+      "term": "line break",
+      "weight": 5.783
+    },
+    {
+      "term": "followed by space",
+      "weight": 5.571
+    },
+    {
+      "term": "capitalize have",
+      "weight": 5.507
+    },
+    {
+      "term": "rule is",
+      "weight": 5.153
+    },
+    {
+      "term": "stop translating",
+      "weight": 5.114
+    }
+  ]
+}
