@@ -1,0 +1,157 @@
+{
+  "timestamp": "20260715_123631",
+  "security_task": "Prompt Injection Detection",
+  "task_definition": {
+    "input": "single text prompt (string)",
+    "output": "1 = injection detected, 0 = safe",
+    "positive_class": "prompt injection / jailbreak attempt"
+  },
+  "evaluation_dataset": "datasets\\eval_dataset.csv",
+  "total_samples": 30,
+  "attack_samples": 20,
+  "safe_samples": 10,
+  "hardware": "CPU only",
+  "reproduction_commands": [
+    "pip install llm-guard --no-deps --break-system-packages",
+    "pip install presidio-anonymizer presidio-analyzer detect-secrets structlog json-repair span-marker --break-system-packages",
+    "pip install fuzzysearch --break-system-packages --only-binary=:all:",
+    "pip install guardrails-ai --break-system-packages",
+    "pip install llamafirewall --no-deps --break-system-packages",
+    "huggingface-cli login  # then request access to meta-llama/Llama-Prompt-Guard-2-86M and wait for approval",
+    "python src/guardrail_comparison.py"
+  ],
+  "constraints_confirmed": {
+    "same_dataset_all_frameworks": true,
+    "no_sensitive_data_to_hosted_apis": true,
+    "no_credentials_committed": true,
+    "implementation_not_replaced": true
+  },
+  "summary": {
+    "best_by_f1": "LLM Guard and LlamaFirewall tied at 91.89% F1 (identical TP/FP/TN/FN on this eval set)",
+    "best_by_latency": "Our Keyword Detector (0.007ms P95) - orders of magnitude faster than any ML-based option, but lowest recall (55%) among detectors that produced results",
+    "notable_finding": "LLM Guard and LlamaFirewall produced identical classification outcomes on this 30-sample eval set, but LlamaFirewall's P95 latency (1185.257ms) is roughly 4x LLM Guard's (305.537ms), suggesting a meaningful throughput tradeoff despite equal accuracy here",
+    "own_detector_caveat": "Our ML detector (44.44% F1) scored well below both external ML-based baselines and our own keyword detector on this eval set. Consistent with a Week 5 finding that the model may overfit to HackAPrompt-specific phrasing rather than generalizing to varied attack styles (roleplay, multilingual, indirect, encoded) - flagged as a direction for future improvement (Week 6: combined-dataset training), not concealed",
+    "frameworks_not_comparable": 2,
+    "frameworks_pending_at_time_of_final_run": 0,
+    "sample_size_caveat": "30-sample eval set; precision/recall are indicative given sample size, not population-level estimates"
+  },
+  "results": [
+    {
+      "name": "Our Keyword Detector",
+      "version": "1.0-custom",
+      "type": "rule_based",
+      "configuration": {
+        "patterns": 17,
+        "case_sensitive": false
+      },
+      "metrics": {
+        "true_positives": 11,
+        "false_positives": 0,
+        "true_negatives": 10,
+        "false_negatives": 9,
+        "precision": 100.0,
+        "recall": 55.0,
+        "f1_score": 70.97,
+        "false_positive_rate": 0.0,
+        "false_negative_rate": 45.0,
+        "latency_median_ms": 0.002,
+        "latency_p95_ms": 0.007,
+        "throughput_per_sec": 368087.47,
+        "execution_failures": 0
+      }
+    },
+    {
+      "name": "Our ML Detector (logistic_regression)",
+      "version": "1.0-custom",
+      "type": "ml_tfidf_logreg",
+      "configuration": {
+        "model": "logistic_regression",
+        "features": "TF-IDF (ngram 1-3, max 10000)",
+        "training_data": "HackAPrompt (601,757 examples)"
+      },
+      "metrics": {
+        "true_positives": 6,
+        "false_positives": 1,
+        "true_negatives": 9,
+        "false_negatives": 14,
+        "precision": 85.71,
+        "recall": 30.0,
+        "f1_score": 44.44,
+        "false_positive_rate": 10.0,
+        "false_negative_rate": 70.0,
+        "latency_median_ms": 0.699,
+        "latency_p95_ms": 1.318,
+        "throughput_per_sec": 1287.68,
+        "execution_failures": 0
+      },
+      "caveat": "scikit-learn version mismatch at load time: Trying to unpickle estimator TfidfTransformer from version 1.7.1 when using version 1.9.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:\nhttps://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations Results may differ slightly from a matched-version environment."
+    },
+    {
+      "name": "LLM Guard \u2014 PromptInjectionScanner",
+      "version": "llm-guard 0.3.10",
+      "type": "ml_based",
+      "url": "https://github.com/protectai/llm-guard",
+      "configuration": {
+        "scanner": "PromptInjection",
+        "match_type": "FULL",
+        "model": "ProtectAI/deberta-v3-base-prompt-injection",
+        "device": "cpu"
+      },
+      "dependency_note": "Package pins torch==2.0.1, transformers==4.38.2, sentencepiece==0.2.0; installed with newer versions (torch 2.12.0, transformers 5.12.1, sentencepiece 0.2.1) via --no-deps. Confirmed working at runtime despite pin mismatch.",
+      "metrics": {
+        "true_positives": 17,
+        "false_positives": 0,
+        "true_negatives": 10,
+        "false_negatives": 3,
+        "precision": 100.0,
+        "recall": 85.0,
+        "f1_score": 91.89,
+        "false_positive_rate": 0.0,
+        "false_negative_rate": 15.0,
+        "latency_median_ms": 181.365,
+        "latency_p95_ms": 305.537,
+        "throughput_per_sec": 5.24,
+        "execution_failures": 0
+      }
+    },
+    {
+      "name": "Guardrails AI \u2014 DetectPromptInjection",
+      "version": "guardrails-ai 0.10.2 (validator unavailable)",
+      "not_comparable": true,
+      "reason": "DetectPromptInjection could not be imported from guardrails.hub (ImportError). Investigation showed this validator's implementation (hub://guardrails/detect_prompt_injection) depends on a Pinecone vector database rather than a standalone local classifier, and the alternative PromptInjectionDetector validator defaults to scoring via a hosted OpenAI API call \u2014 which would violate the constraint against sending data to hosted APIs. No fully local, standalone prompt-injection classifier is available in Guardrails AI without either external vector-database infrastructure or hosted-API calls.",
+      "url": "https://github.com/guardrails-ai/guardrails"
+    },
+    {
+      "name": "NVIDIA NeMo Guardrails",
+      "not_comparable": true,
+      "reason": "Jailbreak/injection detection in NeMo Guardrails is implemented as an LLM-judged rail (calling a second LLM to evaluate the prompt) rather than a standalone classifier, and requires a YAML rail config plus a configured LLM endpoint. This confounds the comparison with a second model's capability rather than testing a comparable classifier component, and cannot be run in the same lightweight local pipeline as the other baselines.",
+      "url": "https://github.com/NVIDIA/NeMo-Guardrails"
+    },
+    {
+      "name": "Meta LlamaFirewall \u2014 PromptGuard",
+      "version": "llamafirewall 1.0.3",
+      "type": "ml_based",
+      "url": "https://github.com/meta-llama/PurpleLlama/tree/main/LlamaFirewall",
+      "configuration": {
+        "scanner": "PROMPT_GUARD",
+        "model": "meta-llama/Llama-Prompt-Guard-2-86M",
+        "device": "cpu"
+      },
+      "metrics": {
+        "true_positives": 17,
+        "false_positives": 0,
+        "true_negatives": 10,
+        "false_negatives": 3,
+        "precision": 100.0,
+        "recall": 85.0,
+        "f1_score": 91.89,
+        "false_positive_rate": 0.0,
+        "false_negative_rate": 15.0,
+        "latency_median_ms": 1047.821,
+        "latency_p95_ms": 1185.257,
+        "throughput_per_sec": 0.93,
+        "execution_failures": 0
+      }
+    }
+  ]
+}
