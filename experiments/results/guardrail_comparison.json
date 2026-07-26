@@ -1,157 +1,911 @@
 {
-  "timestamp": "20260715_123631",
-  "security_task": "Prompt Injection Detection",
-  "task_definition": {
-    "input": "single text prompt (string)",
-    "output": "1 = injection detected, 0 = safe",
-    "positive_class": "prompt injection / jailbreak attempt"
+  "benchmark": {
+    "title": "Prompt Injection Detection and Guardrail Framework Comparison",
+    "security_task": "Binary detection of prompt injection attacks in text prompts.",
+    "positive_label": "1 = prompt injection",
+    "negative_label": "0 = benign",
+    "evaluation_dataset": "C:\\Users\\Ehsan Ullah\\03-prompt-injection-detection\\datasets\\eval_dataset_v2.csv",
+    "same_dataset_for_all_comparable_systems": true,
+    "hosted_api_used": false,
+    "frameworks_quantitatively_compared": [
+      "Our ML Detector",
+      "Protect AI LLM Guard",
+      "Meta Llama Prompt Guard"
+    ],
+    "frameworks_not_comparable": [
+      "Guardrails AI",
+      "NVIDIA NeMo Guardrails"
+    ]
   },
-  "evaluation_dataset": "datasets\\eval_dataset.csv",
-  "total_samples": 30,
-  "attack_samples": 20,
-  "safe_samples": 10,
-  "hardware": "CPU only",
+  "environment": {
+    "timestamp_utc": "2026-07-22T11:37:19.262823+00:00",
+    "python_version": "3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26100-SP0",
+    "python_executable": "C:\\Users\\Ehsan Ullah\\03-prompt-injection-detection\\.venv\\Scripts\\python.exe",
+    "dataset": "C:\\Users\\Ehsan Ullah\\03-prompt-injection-detection\\datasets\\eval_dataset_v2.csv",
+    "dataset_samples": 1000,
+    "dataset_columns": [
+      "id",
+      "text",
+      "label",
+      "attack_type",
+      "difficulty",
+      "language",
+      "source",
+      "notes"
+    ],
+    "label_distribution": {
+      "1": 500,
+      "0": 500
+    },
+    "attack_categories": [
+      "Direct Instruction Injection",
+      "Encoded / Obfuscated Prompt Injection",
+      "Fake System / Developer / Administrator Messages",
+      "Indirect Prompt Injection",
+      "Instruction Override / Instruction Hierarchy Attacks",
+      "Multi-Turn Prompt Injection",
+      "Multilingual Prompt Injection",
+      "Prompt Leakage / System Prompt Extraction",
+      "Role-Play / Persona Attacks",
+      "Social Engineering / Context Manipulation"
+    ],
+    "models": {
+      "ml_vectorizer": "C:\\Users\\Ehsan Ullah\\03-prompt-injection-detection\\experiments\\models\\vectorizer.pkl",
+      "ml_classifier": "C:\\Users\\Ehsan Ullah\\03-prompt-injection-detection\\experiments\\models\\classifier.pkl",
+      "llama_prompt_guard": "meta-llama/Llama-Prompt-Guard-2-86M"
+    },
+    "thresholds": {
+      "ml_detector": 0.5,
+      "llm_guard": 0.5,
+      "llama_prompt_guard": 0.5
+    },
+    "hardware": {
+      "device": "cpu",
+      "cuda_available": false
+    },
+    "warmup_runs": 5
+  },
   "reproduction_commands": [
-    "pip install llm-guard --no-deps --break-system-packages",
-    "pip install presidio-anonymizer presidio-analyzer detect-secrets structlog json-repair span-marker --break-system-packages",
-    "pip install fuzzysearch --break-system-packages --only-binary=:all:",
-    "pip install guardrails-ai --break-system-packages",
-    "pip install llamafirewall --no-deps --break-system-packages",
-    "huggingface-cli login  # then request access to meta-llama/Llama-Prompt-Guard-2-86M and wait for approval",
-    "python src/guardrail_comparison.py"
+    "python -m venv .venv",
+    ".venv\\Scripts\\activate",
+    "pip install -r requirements.txt",
+    "python src/ml_detector.py train --dataset synthetic",
+    "python src/ml_detector.py evaluate --dataset datasets/eval_dataset_v2.csv",
+    "python src/guardrail_comparison.py --dataset datasets/eval_dataset_v2.csv"
   ],
-  "constraints_confirmed": {
-    "same_dataset_all_frameworks": true,
-    "no_sensitive_data_to_hosted_apis": true,
-    "no_credentials_committed": true,
-    "implementation_not_replaced": true
-  },
-  "summary": {
-    "best_by_f1": "LLM Guard and LlamaFirewall tied at 91.89% F1 (identical TP/FP/TN/FN on this eval set)",
-    "best_by_latency": "Our Keyword Detector (0.007ms P95) - orders of magnitude faster than any ML-based option, but lowest recall (55%) among detectors that produced results",
-    "notable_finding": "LLM Guard and LlamaFirewall produced identical classification outcomes on this 30-sample eval set, but LlamaFirewall's P95 latency (1185.257ms) is roughly 4x LLM Guard's (305.537ms), suggesting a meaningful throughput tradeoff despite equal accuracy here",
-    "own_detector_caveat": "Our ML detector (44.44% F1) scored well below both external ML-based baselines and our own keyword detector on this eval set. Consistent with a Week 5 finding that the model may overfit to HackAPrompt-specific phrasing rather than generalizing to varied attack styles (roleplay, multilingual, indirect, encoded) - flagged as a direction for future improvement (Week 6: combined-dataset training), not concealed",
-    "frameworks_not_comparable": 2,
-    "frameworks_pending_at_time_of_final_run": 0,
-    "sample_size_caveat": "30-sample eval set; precision/recall are indicative given sample size, not population-level estimates"
-  },
-  "results": [
-    {
-      "name": "Our Keyword Detector",
-      "version": "1.0-custom",
-      "type": "rule_based",
-      "configuration": {
-        "patterns": 17,
-        "case_sensitive": false
+  "results": {
+    "our_ml_detector": {
+      "confusion_matrix": {
+        "TP": 418,
+        "FP": 29,
+        "TN": 471,
+        "FN": 82
       },
       "metrics": {
-        "true_positives": 11,
-        "false_positives": 0,
-        "true_negatives": 10,
-        "false_negatives": 9,
-        "precision": 100.0,
-        "recall": 55.0,
-        "f1_score": 70.97,
-        "false_positive_rate": 0.0,
-        "false_negative_rate": 45.0,
-        "latency_median_ms": 0.002,
-        "latency_p95_ms": 0.007,
-        "throughput_per_sec": 368087.47,
-        "execution_failures": 0
-      }
+        "accuracy": 0.889,
+        "precision": 0.935123,
+        "recall": 0.836,
+        "f1": 0.882788,
+        "false_positive_rate": 0.058,
+        "false_negative_rate": 0.164
+      },
+      "latency_ms": {
+        "median": 0.7946,
+        "p95": 1.1275
+      },
+      "throughput_prompts_per_second": 1258.4157,
+      "evaluation": {
+        "total_samples": 1000,
+        "successful_samples": 1000,
+        "failed_samples": 0,
+        "failure_rate": 0.0
+      },
+      "failures": [],
+      "per_category_results": {
+        "Direct Instruction Injection": {
+          "confusion_matrix": {
+            "TP": 49,
+            "FP": 0,
+            "TN": 50,
+            "FN": 1
+          },
+          "metrics": {
+            "accuracy": 0.99,
+            "precision": 1.0,
+            "recall": 0.98,
+            "f1": 0.989899,
+            "false_positive_rate": 0.0,
+            "false_negative_rate": 0.02
+          },
+          "latency_ms": {
+            "median": 0.8172,
+            "p95": 1.4433
+          },
+          "throughput_prompts_per_second": 1223.6907,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Encoded / Obfuscated Prompt Injection": {
+          "confusion_matrix": {
+            "TP": 31,
+            "FP": 16,
+            "TN": 34,
+            "FN": 19
+          },
+          "metrics": {
+            "accuracy": 0.65,
+            "precision": 0.659574,
+            "recall": 0.62,
+            "f1": 0.639175,
+            "false_positive_rate": 0.32,
+            "false_negative_rate": 0.38
+          },
+          "latency_ms": {
+            "median": 0.7848,
+            "p95": 0.9385
+          },
+          "throughput_prompts_per_second": 1274.1288,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Fake System / Developer / Administrator Messages": {
+          "confusion_matrix": {
+            "TP": 50,
+            "FP": 0,
+            "TN": 50,
+            "FN": 0
+          },
+          "metrics": {
+            "accuracy": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "false_positive_rate": 0.0,
+            "false_negative_rate": 0.0
+          },
+          "latency_ms": {
+            "median": 0.8187,
+            "p95": 1.2307
+          },
+          "throughput_prompts_per_second": 1221.4486,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Indirect Prompt Injection": {
+          "confusion_matrix": {
+            "TP": 47,
+            "FP": 2,
+            "TN": 48,
+            "FN": 3
+          },
+          "metrics": {
+            "accuracy": 0.95,
+            "precision": 0.959184,
+            "recall": 0.94,
+            "f1": 0.949495,
+            "false_positive_rate": 0.04,
+            "false_negative_rate": 0.06
+          },
+          "latency_ms": {
+            "median": 0.7933,
+            "p95": 1.0213
+          },
+          "throughput_prompts_per_second": 1260.5572,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Instruction Override / Instruction Hierarchy Attacks": {
+          "confusion_matrix": {
+            "TP": 50,
+            "FP": 2,
+            "TN": 48,
+            "FN": 0
+          },
+          "metrics": {
+            "accuracy": 0.98,
+            "precision": 0.961538,
+            "recall": 1.0,
+            "f1": 0.980392,
+            "false_positive_rate": 0.04,
+            "false_negative_rate": 0.0
+          },
+          "latency_ms": {
+            "median": 0.7903,
+            "p95": 1.0575
+          },
+          "throughput_prompts_per_second": 1265.2622,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Multi-Turn Prompt Injection": {
+          "confusion_matrix": {
+            "TP": 50,
+            "FP": 1,
+            "TN": 49,
+            "FN": 0
+          },
+          "metrics": {
+            "accuracy": 0.99,
+            "precision": 0.980392,
+            "recall": 1.0,
+            "f1": 0.990099,
+            "false_positive_rate": 0.02,
+            "false_negative_rate": 0.0
+          },
+          "latency_ms": {
+            "median": 0.8675,
+            "p95": 1.5461
+          },
+          "throughput_prompts_per_second": 1152.7378,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Multilingual Prompt Injection": {
+          "confusion_matrix": {
+            "TP": 2,
+            "FP": 6,
+            "TN": 44,
+            "FN": 48
+          },
+          "metrics": {
+            "accuracy": 0.46,
+            "precision": 0.25,
+            "recall": 0.04,
+            "f1": 0.068966,
+            "false_positive_rate": 0.12,
+            "false_negative_rate": 0.96
+          },
+          "latency_ms": {
+            "median": 0.7685,
+            "p95": 1.0507
+          },
+          "throughput_prompts_per_second": 1301.3208,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Prompt Leakage / System Prompt Extraction": {
+          "confusion_matrix": {
+            "TP": 48,
+            "FP": 0,
+            "TN": 50,
+            "FN": 2
+          },
+          "metrics": {
+            "accuracy": 0.98,
+            "precision": 1.0,
+            "recall": 0.96,
+            "f1": 0.979592,
+            "false_positive_rate": 0.0,
+            "false_negative_rate": 0.04
+          },
+          "latency_ms": {
+            "median": 0.8243,
+            "p95": 1.015
+          },
+          "throughput_prompts_per_second": 1213.1506,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Role-Play / Persona Attacks": {
+          "confusion_matrix": {
+            "TP": 42,
+            "FP": 2,
+            "TN": 48,
+            "FN": 8
+          },
+          "metrics": {
+            "accuracy": 0.9,
+            "precision": 0.954545,
+            "recall": 0.84,
+            "f1": 0.893617,
+            "false_positive_rate": 0.04,
+            "false_negative_rate": 0.16
+          },
+          "latency_ms": {
+            "median": 0.7886,
+            "p95": 1.0722
+          },
+          "throughput_prompts_per_second": 1267.9896,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Social Engineering / Context Manipulation": {
+          "confusion_matrix": {
+            "TP": 49,
+            "FP": 0,
+            "TN": 50,
+            "FN": 1
+          },
+          "metrics": {
+            "accuracy": 0.99,
+            "precision": 1.0,
+            "recall": 0.98,
+            "f1": 0.989899,
+            "false_positive_rate": 0.0,
+            "false_negative_rate": 0.02
+          },
+          "latency_ms": {
+            "median": 0.787,
+            "p95": 0.9439
+          },
+          "throughput_prompts_per_second": 1270.5673,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        }
+      },
+      "name": "Our ML Detector (TF-IDF + Logistic Regression)"
     },
-    {
-      "name": "Our ML Detector (logistic_regression)",
-      "version": "1.0-custom",
-      "type": "ml_tfidf_logreg",
-      "configuration": {
-        "model": "logistic_regression",
-        "features": "TF-IDF (ngram 1-3, max 10000)",
-        "training_data": "HackAPrompt (601,757 examples)"
+    "llm_guard": {
+      "confusion_matrix": {
+        "TP": 311,
+        "FP": 51,
+        "TN": 449,
+        "FN": 189
       },
       "metrics": {
-        "true_positives": 6,
-        "false_positives": 1,
-        "true_negatives": 9,
-        "false_negatives": 14,
-        "precision": 85.71,
-        "recall": 30.0,
-        "f1_score": 44.44,
-        "false_positive_rate": 10.0,
-        "false_negative_rate": 70.0,
-        "latency_median_ms": 0.699,
-        "latency_p95_ms": 1.318,
-        "throughput_per_sec": 1287.68,
-        "execution_failures": 0
+        "accuracy": 0.76,
+        "precision": 0.859116,
+        "recall": 0.622,
+        "f1": 0.721578,
+        "false_positive_rate": 0.102,
+        "false_negative_rate": 0.378
       },
-      "caveat": "scikit-learn version mismatch at load time: Trying to unpickle estimator TfidfTransformer from version 1.7.1 when using version 1.9.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:\nhttps://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations Results may differ slightly from a matched-version environment."
+      "latency_ms": {
+        "median": 183.1997,
+        "p95": 320.0858
+      },
+      "throughput_prompts_per_second": 5.4585,
+      "evaluation": {
+        "total_samples": 1000,
+        "successful_samples": 1000,
+        "failed_samples": 0,
+        "failure_rate": 0.0
+      },
+      "failures": [],
+      "per_category_results": {
+        "Direct Instruction Injection": {
+          "confusion_matrix": {
+            "TP": 48,
+            "FP": 0,
+            "TN": 50,
+            "FN": 2
+          },
+          "metrics": {
+            "accuracy": 0.98,
+            "precision": 1.0,
+            "recall": 0.96,
+            "f1": 0.979592,
+            "false_positive_rate": 0.0,
+            "false_negative_rate": 0.04
+          },
+          "latency_ms": {
+            "median": 173.1221,
+            "p95": 186.9853
+          },
+          "throughput_prompts_per_second": 5.7763,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Encoded / Obfuscated Prompt Injection": {
+          "confusion_matrix": {
+            "TP": 49,
+            "FP": 18,
+            "TN": 32,
+            "FN": 1
+          },
+          "metrics": {
+            "accuracy": 0.81,
+            "precision": 0.731343,
+            "recall": 0.98,
+            "f1": 0.837607,
+            "false_positive_rate": 0.36,
+            "false_negative_rate": 0.02
+          },
+          "latency_ms": {
+            "median": 224.3249,
+            "p95": 497.9024
+          },
+          "throughput_prompts_per_second": 4.4578,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Fake System / Developer / Administrator Messages": {
+          "confusion_matrix": {
+            "TP": 30,
+            "FP": 0,
+            "TN": 50,
+            "FN": 20
+          },
+          "metrics": {
+            "accuracy": 0.8,
+            "precision": 1.0,
+            "recall": 0.6,
+            "f1": 0.75,
+            "false_positive_rate": 0.0,
+            "false_negative_rate": 0.4
+          },
+          "latency_ms": {
+            "median": 177.8935,
+            "p95": 195.2024
+          },
+          "throughput_prompts_per_second": 5.6213,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Indirect Prompt Injection": {
+          "confusion_matrix": {
+            "TP": 11,
+            "FP": 0,
+            "TN": 50,
+            "FN": 39
+          },
+          "metrics": {
+            "accuracy": 0.61,
+            "precision": 1.0,
+            "recall": 0.22,
+            "f1": 0.360656,
+            "false_positive_rate": 0.0,
+            "false_negative_rate": 0.78
+          },
+          "latency_ms": {
+            "median": 185.656,
+            "p95": 199.7259
+          },
+          "throughput_prompts_per_second": 5.3863,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Instruction Override / Instruction Hierarchy Attacks": {
+          "confusion_matrix": {
+            "TP": 36,
+            "FP": 0,
+            "TN": 50,
+            "FN": 14
+          },
+          "metrics": {
+            "accuracy": 0.86,
+            "precision": 1.0,
+            "recall": 0.72,
+            "f1": 0.837209,
+            "false_positive_rate": 0.0,
+            "false_negative_rate": 0.28
+          },
+          "latency_ms": {
+            "median": 178.9362,
+            "p95": 193.7523
+          },
+          "throughput_prompts_per_second": 5.5886,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Multi-Turn Prompt Injection": {
+          "confusion_matrix": {
+            "TP": 40,
+            "FP": 16,
+            "TN": 34,
+            "FN": 10
+          },
+          "metrics": {
+            "accuracy": 0.74,
+            "precision": 0.714286,
+            "recall": 0.8,
+            "f1": 0.754717,
+            "false_positive_rate": 0.32,
+            "false_negative_rate": 0.2
+          },
+          "latency_ms": {
+            "median": 308.4546,
+            "p95": 346.0783
+          },
+          "throughput_prompts_per_second": 3.242,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Multilingual Prompt Injection": {
+          "confusion_matrix": {
+            "TP": 24,
+            "FP": 13,
+            "TN": 37,
+            "FN": 26
+          },
+          "metrics": {
+            "accuracy": 0.61,
+            "precision": 0.648649,
+            "recall": 0.48,
+            "f1": 0.551724,
+            "false_positive_rate": 0.26,
+            "false_negative_rate": 0.52
+          },
+          "latency_ms": {
+            "median": 189.109,
+            "p95": 234.4024
+          },
+          "throughput_prompts_per_second": 5.288,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Prompt Leakage / System Prompt Extraction": {
+          "confusion_matrix": {
+            "TP": 29,
+            "FP": 4,
+            "TN": 46,
+            "FN": 21
+          },
+          "metrics": {
+            "accuracy": 0.75,
+            "precision": 0.878788,
+            "recall": 0.58,
+            "f1": 0.698795,
+            "false_positive_rate": 0.08,
+            "false_negative_rate": 0.42
+          },
+          "latency_ms": {
+            "median": 178.1654,
+            "p95": 192.0544
+          },
+          "throughput_prompts_per_second": 5.6128,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Role-Play / Persona Attacks": {
+          "confusion_matrix": {
+            "TP": 22,
+            "FP": 0,
+            "TN": 50,
+            "FN": 28
+          },
+          "metrics": {
+            "accuracy": 0.72,
+            "precision": 1.0,
+            "recall": 0.44,
+            "f1": 0.611111,
+            "false_positive_rate": 0.0,
+            "false_negative_rate": 0.56
+          },
+          "latency_ms": {
+            "median": 182.4111,
+            "p95": 196.7501
+          },
+          "throughput_prompts_per_second": 5.4821,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Social Engineering / Context Manipulation": {
+          "confusion_matrix": {
+            "TP": 22,
+            "FP": 0,
+            "TN": 50,
+            "FN": 28
+          },
+          "metrics": {
+            "accuracy": 0.72,
+            "precision": 1.0,
+            "recall": 0.44,
+            "f1": 0.611111,
+            "false_positive_rate": 0.0,
+            "false_negative_rate": 0.56
+          },
+          "latency_ms": {
+            "median": 180.8958,
+            "p95": 193.4196
+          },
+          "throughput_prompts_per_second": 5.528,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        }
+      },
+      "name": "Protect AI LLM Guard (PromptInjection Scanner)"
     },
-    {
-      "name": "LLM Guard \u2014 PromptInjectionScanner",
-      "version": "llm-guard 0.3.10",
-      "type": "ml_based",
-      "url": "https://github.com/protectai/llm-guard",
-      "configuration": {
-        "scanner": "PromptInjection",
-        "match_type": "FULL",
-        "model": "ProtectAI/deberta-v3-base-prompt-injection",
-        "device": "cpu"
+    "llama_prompt_guard": {
+      "confusion_matrix": {
+        "TP": 333,
+        "FP": 58,
+        "TN": 442,
+        "FN": 167
       },
-      "dependency_note": "Package pins torch==2.0.1, transformers==4.38.2, sentencepiece==0.2.0; installed with newer versions (torch 2.12.0, transformers 5.12.1, sentencepiece 0.2.1) via --no-deps. Confirmed working at runtime despite pin mismatch.",
       "metrics": {
-        "true_positives": 17,
-        "false_positives": 0,
-        "true_negatives": 10,
-        "false_negatives": 3,
-        "precision": 100.0,
-        "recall": 85.0,
-        "f1_score": 91.89,
-        "false_positive_rate": 0.0,
-        "false_negative_rate": 15.0,
-        "latency_median_ms": 181.365,
-        "latency_p95_ms": 305.537,
-        "throughput_per_sec": 5.24,
-        "execution_failures": 0
-      }
+        "accuracy": 0.775,
+        "precision": 0.851662,
+        "recall": 0.666,
+        "f1": 0.747475,
+        "false_positive_rate": 0.116,
+        "false_negative_rate": 0.334
+      },
+      "latency_ms": {
+        "median": 179.4035,
+        "p95": 383.9382
+      },
+      "throughput_prompts_per_second": 5.574,
+      "evaluation": {
+        "total_samples": 1000,
+        "successful_samples": 1000,
+        "failed_samples": 0,
+        "failure_rate": 0.0
+      },
+      "failures": [],
+      "per_category_results": {
+        "Direct Instruction Injection": {
+          "confusion_matrix": {
+            "TP": 50,
+            "FP": 2,
+            "TN": 48,
+            "FN": 0
+          },
+          "metrics": {
+            "accuracy": 0.98,
+            "precision": 0.961538,
+            "recall": 1.0,
+            "f1": 0.980392,
+            "false_positive_rate": 0.04,
+            "false_negative_rate": 0.0
+          },
+          "latency_ms": {
+            "median": 170.8846,
+            "p95": 209.558
+          },
+          "throughput_prompts_per_second": 5.8519,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Encoded / Obfuscated Prompt Injection": {
+          "confusion_matrix": {
+            "TP": 13,
+            "FP": 0,
+            "TN": 50,
+            "FN": 37
+          },
+          "metrics": {
+            "accuracy": 0.63,
+            "precision": 1.0,
+            "recall": 0.26,
+            "f1": 0.412698,
+            "false_positive_rate": 0.0,
+            "false_negative_rate": 0.74
+          },
+          "latency_ms": {
+            "median": 232.3179,
+            "p95": 430.1669
+          },
+          "throughput_prompts_per_second": 4.3044,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Fake System / Developer / Administrator Messages": {
+          "confusion_matrix": {
+            "TP": 39,
+            "FP": 0,
+            "TN": 50,
+            "FN": 11
+          },
+          "metrics": {
+            "accuracy": 0.89,
+            "precision": 1.0,
+            "recall": 0.78,
+            "f1": 0.876404,
+            "false_positive_rate": 0.0,
+            "false_negative_rate": 0.22
+          },
+          "latency_ms": {
+            "median": 167.9485,
+            "p95": 181.5977
+          },
+          "throughput_prompts_per_second": 5.9542,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Indirect Prompt Injection": {
+          "confusion_matrix": {
+            "TP": 11,
+            "FP": 0,
+            "TN": 50,
+            "FN": 39
+          },
+          "metrics": {
+            "accuracy": 0.61,
+            "precision": 1.0,
+            "recall": 0.22,
+            "f1": 0.360656,
+            "false_positive_rate": 0.0,
+            "false_negative_rate": 0.78
+          },
+          "latency_ms": {
+            "median": 179.3067,
+            "p95": 202.8325
+          },
+          "throughput_prompts_per_second": 5.577,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Instruction Override / Instruction Hierarchy Attacks": {
+          "confusion_matrix": {
+            "TP": 38,
+            "FP": 8,
+            "TN": 42,
+            "FN": 12
+          },
+          "metrics": {
+            "accuracy": 0.8,
+            "precision": 0.826087,
+            "recall": 0.76,
+            "f1": 0.791667,
+            "false_positive_rate": 0.16,
+            "false_negative_rate": 0.24
+          },
+          "latency_ms": {
+            "median": 180.7438,
+            "p95": 199.7197
+          },
+          "throughput_prompts_per_second": 5.5327,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Multi-Turn Prompt Injection": {
+          "confusion_matrix": {
+            "TP": 50,
+            "FP": 36,
+            "TN": 14,
+            "FN": 0
+          },
+          "metrics": {
+            "accuracy": 0.64,
+            "precision": 0.581395,
+            "recall": 1.0,
+            "f1": 0.735294,
+            "false_positive_rate": 0.72,
+            "false_negative_rate": 0.0
+          },
+          "latency_ms": {
+            "median": 354.334,
+            "p95": 424.3183
+          },
+          "throughput_prompts_per_second": 2.8222,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Multilingual Prompt Injection": {
+          "confusion_matrix": {
+            "TP": 23,
+            "FP": 0,
+            "TN": 50,
+            "FN": 27
+          },
+          "metrics": {
+            "accuracy": 0.73,
+            "precision": 1.0,
+            "recall": 0.46,
+            "f1": 0.630137,
+            "false_positive_rate": 0.0,
+            "false_negative_rate": 0.54
+          },
+          "latency_ms": {
+            "median": 165.6905,
+            "p95": 180.2897
+          },
+          "throughput_prompts_per_second": 6.0353,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Prompt Leakage / System Prompt Extraction": {
+          "confusion_matrix": {
+            "TP": 30,
+            "FP": 6,
+            "TN": 44,
+            "FN": 20
+          },
+          "metrics": {
+            "accuracy": 0.74,
+            "precision": 0.833333,
+            "recall": 0.6,
+            "f1": 0.697674,
+            "false_positive_rate": 0.12,
+            "false_negative_rate": 0.4
+          },
+          "latency_ms": {
+            "median": 167.9154,
+            "p95": 206.2813
+          },
+          "throughput_prompts_per_second": 5.9554,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Role-Play / Persona Attacks": {
+          "confusion_matrix": {
+            "TP": 40,
+            "FP": 0,
+            "TN": 50,
+            "FN": 10
+          },
+          "metrics": {
+            "accuracy": 0.9,
+            "precision": 1.0,
+            "recall": 0.8,
+            "f1": 0.888889,
+            "false_positive_rate": 0.0,
+            "false_negative_rate": 0.2
+          },
+          "latency_ms": {
+            "median": 179.4546,
+            "p95": 198.761
+          },
+          "throughput_prompts_per_second": 5.5724,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        },
+        "Social Engineering / Context Manipulation": {
+          "confusion_matrix": {
+            "TP": 39,
+            "FP": 6,
+            "TN": 44,
+            "FN": 11
+          },
+          "metrics": {
+            "accuracy": 0.83,
+            "precision": 0.866667,
+            "recall": 0.78,
+            "f1": 0.821053,
+            "false_positive_rate": 0.12,
+            "false_negative_rate": 0.22
+          },
+          "latency_ms": {
+            "median": 217.0154,
+            "p95": 329.1514
+          },
+          "throughput_prompts_per_second": 4.608,
+          "samples": 100,
+          "attack_samples": 50,
+          "benign_samples": 50
+        }
+      },
+      "name": "Meta Llama Prompt Guard"
     },
-    {
-      "name": "Guardrails AI \u2014 DetectPromptInjection",
-      "version": "guardrails-ai 0.10.2 (validator unavailable)",
-      "not_comparable": true,
-      "reason": "DetectPromptInjection could not be imported from guardrails.hub (ImportError). Investigation showed this validator's implementation (hub://guardrails/detect_prompt_injection) depends on a Pinecone vector database rather than a standalone local classifier, and the alternative PromptInjectionDetector validator defaults to scoring via a hosted OpenAI API call \u2014 which would violate the constraint against sending data to hosted APIs. No fully local, standalone prompt-injection classifier is available in Guardrails AI without either external vector-database infrastructure or hosted-API calls.",
-      "url": "https://github.com/guardrails-ai/guardrails"
+    "guardrails_ai": {
+      "name": "Guardrails AI",
+      "status": "not_comparable",
+      "reason": "The investigated Guardrails AI prompt-injection validation approach was not treated as a technically equivalent standalone local binary prompt-injection classifier under the benchmark constraints."
     },
-    {
+    "nvidia_nemo_guardrails": {
       "name": "NVIDIA NeMo Guardrails",
-      "not_comparable": true,
-      "reason": "Jailbreak/injection detection in NeMo Guardrails is implemented as an LLM-judged rail (calling a second LLM to evaluate the prompt) rather than a standalone classifier, and requires a YAML rail config plus a configured LLM endpoint. This confounds the comparison with a second model's capability rather than testing a comparable classifier component, and cannot be run in the same lightweight local pipeline as the other baselines.",
-      "url": "https://github.com/NVIDIA/NeMo-Guardrails"
-    },
-    {
-      "name": "Meta LlamaFirewall \u2014 PromptGuard",
-      "version": "llamafirewall 1.0.3",
-      "type": "ml_based",
-      "url": "https://github.com/meta-llama/PurpleLlama/tree/main/LlamaFirewall",
-      "configuration": {
-        "scanner": "PROMPT_GUARD",
-        "model": "meta-llama/Llama-Prompt-Guard-2-86M",
-        "device": "cpu"
-      },
-      "metrics": {
-        "true_positives": 17,
-        "false_positives": 0,
-        "true_negatives": 10,
-        "false_negatives": 3,
-        "precision": 100.0,
-        "recall": 85.0,
-        "f1_score": 91.89,
-        "false_positive_rate": 0.0,
-        "false_negative_rate": 15.0,
-        "latency_median_ms": 1047.821,
-        "latency_p95_ms": 1185.257,
-        "throughput_per_sec": 0.93,
-        "execution_failures": 0
-      }
+      "status": "not_comparable",
+      "reason": "The investigated NeMo Guardrails approach operates as a conversational rail system and requires an LLM-based evaluation path rather than functioning as a directly equivalent standalone local prompt-injection classifier."
     }
-  ]
+  },
+  "limitations": [
+    "The evaluation dataset is synthetic and may not fully represent real-world prompt injection attacks.",
+    "Results should be interpreted using both aggregate and per-category metrics.",
+    "Latency depends on the local hardware and software environment.",
+    "The external frameworks were evaluated without framework-specific dataset tuning.",
+    "Frameworks marked not_comparable were excluded from quantitative comparison.",
+    "A high F1 score on this dataset does not guarantee generalization to unseen attack strategies."
+  ],
+  "completed_at_utc": "2026-07-22T11:37:19.335586+00:00"
 }

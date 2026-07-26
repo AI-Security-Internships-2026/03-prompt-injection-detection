@@ -1,544 +1,2228 @@
 """
+ML-Based Prompt Injection Detector
+
+Project:
 Prompt Injection Detection and Defence for LLM-Based Applications
-CNIT/PNTLab Pisa — AI Security Internship 2026
 
-Week 4/5: ML-Based Prompt Injection Detector
-=============================================
+Model:
+    TF-IDF + Logistic Regression
 
-Trains a TF-IDF + Logistic Regression classifier on the HackAPrompt
-dataset to detect prompt injection attempts, and benchmarks it
-against a rule-based keyword detector.
+Training datasets:
+    1. Synthetic attacks:
+       datasets/prompt_injection_500.csv
 
-Design notes
-------------
-- Train/test splits are persisted to disk so results are reproducible
-  across runs and comparable week-over-week.
-- The model is evaluated on three slices: the held-out HackAPrompt
-  test set (in-domain), Garak-generated attacks, and a hand-written
-  custom attack set (both out-of-domain, if present) — this is the
-  number that actually matters for real-world generalisation.
-- Models are persisted with joblib (the sklearn-recommended format)
-  rather than raw pickle.
+    2. Synthetic benign:
+       datasets/benign_500.csv
 
-Usage
------
-    python src/ml_detector.py train                 # train + evaluate + save
-    python src/ml_detector.py train --model svm      # train a different model
-    python src/ml_detector.py evaluate                # re-evaluate saved model
-    python src/ml_detector.py interactive             # interactive CLI testing
+    3. Optional Garak attacks:
+       datasets/garak_attacks.csv
+
+Evaluation:
+    Held-out evaluation dataset should NOT be used during training.
+
+    Example:
+        datasets/eval_dataset_v2.csv
+
+Expected evaluation columns:
+    id
+    text
+    label
+    attack_type
+    difficulty
+    language
+    source
+    notes
+
+Labels:
+    0 = Benign
+    1 = Prompt Injection Attack
+
+Commands:
+
+Train on synthetic data:
+    python src/ml_detector.py train --dataset synthetic
+
+Train on synthetic + Garak:
+    python src/ml_detector.py train --dataset combined
+
+Evaluate on held-out evaluation dataset:
+    python src/ml_detector.py evaluate --dataset datasets/eval_dataset_v2.csv
+
+Evaluate with custom threshold:
+    python src/ml_detector.py evaluate --dataset datasets/eval_dataset_v2.csv --threshold 0.50
+
+Interactive testing:
+    python src/ml_detector.py test
 """
-
-from __future__ import annotations
 
 import argparse
 import json
-import logging
+import pickle
+import platform
 import sys
-from dataclasses import dataclass, field
-from datetime import datetime
+import time
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
-import joblib
 import pandas as pd
-from datasets import load_dataset
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
+
 from sklearn.metrics import (
     accuracy_score,
-    classification_report,
-    confusion_matrix,
-    f1_score,
     precision_score,
     recall_score,
+    f1_score,
+    confusion_matrix,
+    classification_report,
 )
+
 from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.svm import LinearSVC
 
-# ─────────────────────────────────────────────────────────────────
-# Logging
-# ─────────────────────────────────────────────────────────────────
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)-8s | %(message)s",
-    datefmt="%H:%M:%S",
+# ============================================================
+# PROJECT PATHS
+# ============================================================
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+DATASETS_DIR = BASE_DIR / "datasets"
+
+MODELS_DIR = (
+    BASE_DIR
+    / "experiments"
+    / "models"
 )
-logger = logging.getLogger("ml_detector")
+
+RESULTS_DIR = (
+    BASE_DIR
+    / "experiments"
+    / "results"
+)
+
+MODELS_DIR.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+RESULTS_DIR.mkdir(
+    parents=True,
+    exist_ok=True
+)
 
 
-# ─────────────────────────────────────────────────────────────────
-# Configuration
-# ─────────────────────────────────────────────────────────────────
+# ============================================================
+# MODEL FILES
+# ============================================================
 
-@dataclass(frozen=True)
-class Config:
-    """Central configuration for paths and hyperparameters."""
+VECTORIZER_PATH = (
+    MODELS_DIR
+    / "vectorizer.pkl"
+)
 
-    results_dir: Path = Path("experiments/results")
-    models_dir: Path = Path("experiments/models")
-    datasets_dir: Path = Path("datasets")
-
-    garak_prompts_file: Path = Path("experiments/results/garak_prompts.txt")
-    custom_attacks_file: Path = Path("datasets/custom_attacks.csv")
-
-    test_size: float = 0.2
-    random_state: int = 42
-
-    tfidf_max_features: int = 10_000
-    tfidf_ngram_range: tuple = (1, 3)
-    tfidf_min_df: int = 2
-
-    @property
-    def vectorizer_path(self) -> Path:
-        return self.models_dir / "vectorizer.joblib"
-
-    def classifier_path(self, model_name: str) -> Path:
-        return self.models_dir / f"classifier_{model_name}.joblib"
-
-    def ensure_dirs(self) -> None:
-        for d in (self.results_dir, self.models_dir, self.datasets_dir):
-            d.mkdir(parents=True, exist_ok=True)
+CLASSIFIER_PATH = (
+    MODELS_DIR
+    / "classifier.pkl"
+)
 
 
-CONFIG = Config()
+# ============================================================
+# RESULT FILES
+# ============================================================
 
-KEYWORD_PATTERNS: list[str] = [
-    "ignore previous instructions",
-    "ignore any previous",
-    "disregard all instructions",
-    "forget previous instructions",
-    "you are now",
-    "new instructions:",
-    "system override",
-    "developer mode",
-    "stop everything",
-    "print yes",
-    "pwned",
-    "ignore and print",
-    "act as",
-    "pretend you are",
-    "from now on",
-    "bypass",
-    "jailbreak",
-]
+TRAINING_METRICS_PATH = (
+    RESULTS_DIR
+    / "ml_detector_training_results.json"
+)
 
-SUPPORTED_MODELS = {
-    "logistic_regression": lambda: LogisticRegression(
-        max_iter=1000, C=1.0, class_weight="balanced",
-        random_state=CONFIG.random_state, solver="lbfgs",
-    ),
-    "naive_bayes": lambda: MultinomialNB(),
-    "svm": lambda: LinearSVC(class_weight="balanced", random_state=CONFIG.random_state),
-}
+EVALUATION_METRICS_PATH = (
+    RESULTS_DIR
+    / "ml_detector_eval_results.json"
+)
 
 
-class DetectorError(Exception):
-    """Raised for recoverable detector pipeline failures."""
+# ============================================================
+# DATASET FILES
+# ============================================================
+
+SYNTHETIC_ATTACKS = (
+    DATASETS_DIR
+    / "prompt_injection_500.csv"
+)
+
+SYNTHETIC_BENIGN = (
+    DATASETS_DIR
+    / "benign_500.csv"
+)
 
 
-# ─────────────────────────────────────────────────────────────────
-# Keyword baseline detector
-# ─────────────────────────────────────────────────────────────────
+# ============================================================
+# HELPER: EMPTY DATAFRAME
+# ============================================================
 
-class KeywordDetector:
-    """Rule-based baseline: flags text containing known injection phrases."""
+def empty_dataset():
 
-    def __init__(self, patterns: list[str] = KEYWORD_PATTERNS) -> None:
-        self.patterns = patterns
-
-    def predict(self, text: str) -> int:
-        return 1 if self.matched_patterns(text) else 0
-
-    def matched_patterns(self, text: str) -> list[str]:
-        text_lower = text.lower()
-        return [p for p in self.patterns if p in text_lower]
-
-    def predict_batch(self, texts: list[str]) -> list[int]:
-        return [self.predict(t) for t in texts]
-
-
-# ─────────────────────────────────────────────────────────────────
-# Data loading
-# ─────────────────────────────────────────────────────────────────
-
-def load_hackaprompt() -> pd.DataFrame:
-    """Loads the HackAPrompt dataset as a labelled DataFrame."""
-    logger.info("Loading HackAPrompt dataset...")
-    dataset = load_dataset("hackaprompt/hackaprompt-dataset")
-    df = dataset["train"].to_pandas()
-    df = df.dropna(subset=["user_input", "correct"])
-    df = df.rename(columns={"user_input": "text"})
-    df["label"] = df["correct"].astype(int)
-    df["source"] = "hackaprompt"
-
-    logger.info(
-        "HackAPrompt loaded: %d rows | attack=%d safe=%d (%.2f%% attack rate)",
-        len(df), df["label"].sum(), (df["label"] == 0).sum(), df["label"].mean() * 100,
-    )
-    return df[["text", "label", "source"]]
-
-
-def load_txt_prompts(path: Path, label: int, source: str) -> pd.DataFrame:
-    """Loads newline-delimited prompts (e.g. Garak output) as a labelled frame."""
-    if not path.exists():
-        logger.warning("Prompt file not found, skipping: %s", path)
-        return pd.DataFrame(columns=["text", "label", "source"])
-
-    prompts = [
-        line.strip()
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip() and not line.startswith("#") and not line.startswith("---")
-    ]
-    logger.info("Loaded %d prompts from %s", len(prompts), path)
-    return pd.DataFrame({"text": prompts, "label": label, "source": source})
-
-
-def load_custom_attacks(path: Path) -> pd.DataFrame:
-    """Loads a manually curated CSV with columns: text,label,attack_type,source."""
-    if not path.exists():
-        logger.warning("Custom attacks file not found, skipping: %s", path)
-        return pd.DataFrame(columns=["text", "label", "source"])
-
-    df = pd.read_csv(path)
-    df["label"] = df["label"].astype(int)
-    df["source"] = "manual"
-    logger.info("Loaded %d custom examples from %s", len(df), path)
-    return df[["text", "label", "source"]]
-
-
-def prepare_train_test_split(
-    df: pd.DataFrame, config: Config = CONFIG
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Stratified train/test split, persisted to disk for reproducibility."""
-    train_df, test_df = train_test_split(
-        df,
-        test_size=config.test_size,
-        random_state=config.random_state,
-        stratify=df["label"],
-    )
-    config.ensure_dirs()
-    train_path = config.datasets_dir / "train_split.csv"
-    test_path = config.datasets_dir / "test_split.csv"
-    train_df.to_csv(train_path, index=False)
-    test_df.to_csv(test_path, index=False)
-    logger.info("Saved split -> train: %s (%d rows) | test: %s (%d rows)",
-                train_path, len(train_df), test_path, len(test_df))
-    return train_df, test_df
-
-
-# ─────────────────────────────────────────────────────────────────
-# Training
-# ─────────────────────────────────────────────────────────────────
-
-def build_vectorizer(config: Config = CONFIG) -> TfidfVectorizer:
-    return TfidfVectorizer(
-        max_features=config.tfidf_max_features,
-        ngram_range=config.tfidf_ngram_range,
-        sublinear_tf=True,
-        strip_accents="unicode",
-        analyzer="word",
-        min_df=config.tfidf_min_df,
+    return pd.DataFrame(
+        columns=[
+            "text",
+            "label"
+        ]
     )
 
 
-def train_model(
-    train_df: pd.DataFrame, model_name: str = "logistic_regression"
-) -> tuple[TfidfVectorizer, object]:
-    """Fits a TF-IDF vectorizer and the requested classifier."""
-    if model_name not in SUPPORTED_MODELS:
-        raise DetectorError(
-            f"Unknown model '{model_name}'. Choose from {list(SUPPORTED_MODELS)}"
+# ============================================================
+# HELPER: CLEAN TRAINING DATA
+# ============================================================
+
+def clean_dataset(df):
+
+    """
+    Clean a binary classification dataset.
+
+    Required columns:
+        text
+        label
+
+    Labels:
+        0 = benign
+        1 = attack
+    """
+
+    required_columns = {
+        "text",
+        "label"
+    }
+
+    missing_columns = (
+        required_columns
+        - set(df.columns)
+    )
+
+    if missing_columns:
+
+        raise ValueError(
+            f"Missing required columns: "
+            f"{missing_columns}"
         )
 
-    logger.info("Vectorizing training text (TF-IDF)...")
-    vectorizer = build_vectorizer()
-    X_train = vectorizer.fit_transform(train_df["text"].astype(str))
-    logger.info("Vocabulary size: %d", len(vectorizer.vocabulary_))
+    df = df[
+        [
+            "text",
+            "label"
+        ]
+    ].copy()
 
-    logger.info("Training model: %s", model_name)
-    classifier = SUPPORTED_MODELS[model_name]()
-    classifier.fit(X_train, train_df["label"])
-    logger.info("Training complete.")
+    df = df.dropna(
+        subset=[
+            "text"
+        ]
+    )
 
-    return vectorizer, classifier
+    df["text"] = (
+        df["text"]
+        .astype(str)
+        .str.strip()
+    )
+
+    df = df[
+        df["text"] != ""
+    ]
+
+    df["label"] = pd.to_numeric(
+        df["label"],
+        errors="raise"
+    ).astype(int)
+
+    invalid_labels = (
+        set(df["label"].unique())
+        - {0, 1}
+    )
+
+    if invalid_labels:
+
+        raise ValueError(
+            "Invalid labels found: "
+            f"{invalid_labels}. "
+            "Labels must be 0 or 1."
+        )
+
+    before = len(df)
+
+    df = df.drop_duplicates(
+        subset=[
+            "text"
+        ]
+    )
+
+    after = len(df)
+
+    print(
+        f"Removed duplicates: "
+        f"{before - after}"
+    )
+
+    df = df.sample(
+        frac=1,
+        random_state=42
+    ).reset_index(
+        drop=True
+    )
+
+    return df
 
 
-# ─────────────────────────────────────────────────────────────────
-# Evaluation
-# ─────────────────────────────────────────────────────────────────
+# ============================================================
+# LOAD SYNTHETIC DATASET
+# ============================================================
 
-def evaluate_on_split(
-    classifier, vectorizer: TfidfVectorizer, texts: pd.Series, labels: pd.Series
-) -> dict:
-    """Computes standard classification metrics on a labelled slice."""
-    X = vectorizer.transform(texts.astype(str))
-    preds = classifier.predict(X)
-    cm = confusion_matrix(labels, preds)
+def load_synthetic_dataset():
 
-    metrics = {
-        "accuracy": round(accuracy_score(labels, preds) * 100, 2),
-        "precision": round(precision_score(labels, preds, zero_division=0) * 100, 2),
-        "recall": round(recall_score(labels, preds, zero_division=0) * 100, 2),
-        "f1_score": round(f1_score(labels, preds, zero_division=0) * 100, 2),
-        "confusion_matrix": {
-            "true_positives": int(cm[1][1]) if cm.shape == (2, 2) else None,
-            "true_negatives": int(cm[0][0]) if cm.shape == (2, 2) else None,
-            "false_positives": int(cm[0][1]) if cm.shape == (2, 2) else None,
-            "false_negatives": int(cm[1][0]) if cm.shape == (2, 2) else None,
-        },
-        "n": len(labels),
-    }
-    return metrics
+    print(
+        "\nLoading synthetic attack dataset..."
+    )
+
+    if not SYNTHETIC_ATTACKS.exists():
+
+        raise FileNotFoundError(
+            f"Attack dataset not found:\n"
+            f"{SYNTHETIC_ATTACKS}"
+        )
+
+    attacks = pd.read_csv(
+        SYNTHETIC_ATTACKS
+    )
+
+    print(
+        f"Attack examples loaded: "
+        f"{len(attacks)}"
+    )
+
+    print(
+        "\nLoading synthetic benign dataset..."
+    )
+
+    if not SYNTHETIC_BENIGN.exists():
+
+        raise FileNotFoundError(
+            f"Benign dataset not found:\n"
+            f"{SYNTHETIC_BENIGN}"
+        )
+
+    benign = pd.read_csv(
+        SYNTHETIC_BENIGN
+    )
+
+    print(
+        f"Benign examples loaded: "
+        f"{len(benign)}"
+    )
+
+    attacks = attacks[
+        [
+            "text"
+        ]
+    ].copy()
+
+    benign = benign[
+        [
+            "text"
+        ]
+    ].copy()
+
+    attacks["label"] = 1
+
+    benign["label"] = 0
+
+    df = pd.concat(
+        [
+            attacks,
+            benign
+        ],
+        ignore_index=True
+    )
+
+    df = clean_dataset(
+        df
+    )
+
+    return df
 
 
-def evaluate_detection_rate(
-    classifier, vectorizer: TfidfVectorizer, texts: pd.Series
-) -> dict:
-    """For unlabelled-as-safe-assumed attack sets: reports raw detection rate."""
-    if len(texts) == 0:
-        return {}
-    X = vectorizer.transform(texts.astype(str))
-    ml_preds = classifier.predict(X)
-    kw_preds = KeywordDetector().predict_batch(list(texts))
+# ============================================================
+# LOAD HACKAPROMPT
+# ============================================================
 
-    ml_rate = sum(ml_preds) / len(texts) * 100
-    kw_rate = sum(kw_preds) / len(texts) * 100
-    return {
-        "n": len(texts),
-        "ml_detected": int(sum(ml_preds)),
-        "ml_detection_rate": round(ml_rate, 2),
-        "keyword_detected": int(sum(kw_preds)),
-        "keyword_detection_rate": round(kw_rate, 2),
-    }
+def load_hackaprompt():
 
+    print(
+        "\nSearching for HackAPrompt dataset..."
+    )
 
-def compare_with_keyword_baseline(
-    classifier, vectorizer: TfidfVectorizer, texts: pd.Series, labels: pd.Series
-) -> dict:
-    """Head-to-head ML vs keyword detector on a labelled test slice."""
-    kw = KeywordDetector()
-    ml_preds = classifier.predict(vectorizer.transform(texts.astype(str)))
-    kw_preds = kw.predict_batch(list(texts))
+    possible_files = [
 
-    ml_f1 = f1_score(labels, ml_preds, zero_division=0)
-    kw_f1 = f1_score(labels, kw_preds, zero_division=0)
+        DATASETS_DIR
+        / "hackaprompt.csv",
 
-    result = {
-        "keyword": {
-            "precision": round(precision_score(labels, kw_preds, zero_division=0) * 100, 2),
-            "recall": round(recall_score(labels, kw_preds, zero_division=0) * 100, 2),
-            "f1_score": round(kw_f1 * 100, 2),
-        },
-        "ml": {
-            "precision": round(precision_score(labels, ml_preds, zero_division=0) * 100, 2),
-            "recall": round(recall_score(labels, ml_preds, zero_division=0) * 100, 2),
-            "f1_score": round(ml_f1 * 100, 2),
-        },
-        "winner": "ml" if ml_f1 > kw_f1 else "keyword",
-    }
+        DATASETS_DIR
+        / "hackaprompt_dataset.csv",
+
+        DATASETS_DIR
+        / "HackAPrompt.csv",
+
+    ]
+
+    file_path = None
+
+    for path in possible_files:
+
+        if path.exists():
+
+            file_path = path
+
+            break
+
+    if file_path is None:
+
+        print(
+            "HackAPrompt CSV not found."
+        )
+
+        print(
+            "Continuing without HackAPrompt."
+        )
+
+        return empty_dataset()
+
+    print(
+        f"Loading HackAPrompt:\n"
+        f"{file_path}"
+    )
+
+    df = pd.read_csv(
+        file_path
+    )
+
+    print(
+        f"Loaded {len(df)} "
+        f"HackAPrompt rows."
+    )
+
+    possible_text_columns = [
+
+        "text",
+
+        "prompt",
+
+        "attack",
+
+        "instruction",
+
+    ]
+
+    text_column = None
+
+    for column in possible_text_columns:
+
+        if column in df.columns:
+
+            text_column = column
+
+            break
+
+    if text_column is None:
+
+        raise ValueError(
+            "Could not find a prompt/text "
+            "column in HackAPrompt dataset."
+        )
+
+    result = pd.DataFrame({
+
+        "text":
+        df[text_column]
+        .astype(str),
+
+        "label":
+        [1] * len(df)
+
+    })
+
+    result["label"] = (
+        result["label"]
+        .astype(int)
+    )
+
+    result = clean_dataset(
+        result
+    )
+
     return result
 
 
-def top_predictive_terms(classifier, vectorizer: TfidfVectorizer, n: int = 15) -> list[dict]:
-    """Returns the top-N terms most associated with the attack class, if supported."""
-    if not hasattr(classifier, "coef_"):
-        return []
-    feature_names = vectorizer.get_feature_names_out()
-    coef = classifier.coef_[0]
-    top_idx = coef.argsort()[-n:][::-1]
-    return [{"term": feature_names[i], "weight": round(float(coef[i]), 3)} for i in top_idx]
+# ============================================================
+# LOAD GARAK
+# ============================================================
 
+def load_garak():
 
-# ─────────────────────────────────────────────────────────────────
-# Persistence
-# ─────────────────────────────────────────────────────────────────
+    possible_files = [
 
-def save_model(vectorizer, classifier, model_name: str, config: Config = CONFIG) -> None:
-    config.ensure_dirs()
-    joblib.dump(vectorizer, config.vectorizer_path)
-    joblib.dump(classifier, config.classifier_path(model_name))
-    logger.info("Model saved: %s, %s", config.vectorizer_path, config.classifier_path(model_name))
+        DATASETS_DIR
+        / "garak_attacks.csv",
 
+        DATASETS_DIR
+        / "garak_prompts.csv",
 
-def load_model(model_name: str, config: Config = CONFIG) -> tuple[Optional[object], Optional[object]]:
-    vec_path, clf_path = config.vectorizer_path, config.classifier_path(model_name)
-    if not vec_path.exists() or not clf_path.exists():
-        return None, None
-    return joblib.load(vec_path), joblib.load(clf_path)
+    ]
 
+    file_path = None
 
-def save_report(report: dict, filename: str, config: Config = CONFIG) -> Path:
-    config.ensure_dirs()
-    path = config.results_dir / filename
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(report, f, indent=2)
-    logger.info("Report saved: %s", path)
-    return path
+    for path in possible_files:
 
+        if path.exists():
 
-# ─────────────────────────────────────────────────────────────────
-# Interactive CLI
-# ─────────────────────────────────────────────────────────────────
+            file_path = path
 
-def run_interactive(model_name: str) -> None:
-    vectorizer, classifier = load_model(model_name)
-    if vectorizer is None:
-        logger.error("No saved model found for '%s'. Run `train` first.", model_name)
-        return
-
-    kw = KeywordDetector()
-    print("=" * 60)
-    print(f"PROMPT INJECTION DETECTOR — interactive mode ({model_name})")
-    print("Type a prompt to test it. Type 'quit' to exit.")
-    print("=" * 60)
-
-    while True:
-        try:
-            prompt = input("\nPROMPT> ").strip()
-        except (EOFError, KeyboardInterrupt):
-            print("\nExiting.")
             break
 
-        if prompt.lower() == "quit":
-            break
-        if not prompt:
-            continue
+    if file_path is None:
 
-        kw_matched = kw.matched_patterns(prompt)
-        X = vectorizer.transform([prompt])
-        ml_pred = classifier.predict(X)[0]
-        ml_score = (
-            classifier.predict_proba(X)[0][1] * 100
-            if hasattr(classifier, "predict_proba")
-            else None
+        print(
+            "\nGarak dataset not found."
         )
 
-        print(f"  Keyword : {'⚠️ SUSPICIOUS ' + str(kw_matched) if kw_matched else '✅ safe'}")
-        if ml_score is not None:
-            label = "🔴 ATTACK" if ml_pred == 1 else "✅ SAFE"
-            print(f"  ML      : {label} (confidence: {ml_score:.1f}%)")
-        else:
-            label = "🔴 ATTACK" if ml_pred == 1 else "✅ SAFE"
-            print(f"  ML      : {label}")
+        return empty_dataset()
 
-
-# ─────────────────────────────────────────────────────────────────
-# Pipeline commands
-# ─────────────────────────────────────────────────────────────────
-
-def cmd_train(model_name: str, include_garak: bool, include_custom: bool) -> None:
-    CONFIG.ensure_dirs()
-
-    frames = [load_hackaprompt()]
-    if include_garak:
-        frames.append(load_txt_prompts(CONFIG.garak_prompts_file, label=1, source="garak"))
-    if include_custom:
-        frames.append(load_custom_attacks(CONFIG.custom_attacks_file))
-
-    df = pd.concat([f for f in frames if not f.empty], ignore_index=True)
-    logger.info("Combined dataset: %d rows from sources=%s", len(df), df["source"].unique().tolist())
-
-    train_df, test_df = prepare_train_test_split(df)
-    vectorizer, classifier = train_model(train_df, model_name)
-
-    # In-domain evaluation
-    metrics = evaluate_on_split(classifier, vectorizer, test_df["text"], test_df["label"])
-    logger.info("Test set metrics: %s", metrics)
-
-    comparison = compare_with_keyword_baseline(
-        classifier, vectorizer, test_df["text"], test_df["label"]
-    )
-    logger.info("ML vs keyword winner: %s", comparison["winner"])
-
-    # Out-of-domain: Garak (always check regardless of whether it was trained on)
-    garak_prompts = load_txt_prompts(CONFIG.garak_prompts_file, label=1, source="garak")
-    garak_eval = (
-        evaluate_detection_rate(classifier, vectorizer, garak_prompts["text"])
-        if not garak_prompts.empty else {}
+    print(
+        f"\nLoading Garak:\n"
+        f"{file_path}"
     )
 
-    save_model(vectorizer, classifier, model_name)
+    df = pd.read_csv(
+        file_path
+    )
 
-    report = {
-        "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S"),
-        "model": model_name,
-        "training_sources": df["source"].unique().tolist(),
-        "training_rows": len(train_df),
-        "test_rows": len(test_df),
-        "test_metrics": metrics,
-        "keyword_vs_ml": comparison,
-        "garak_generalisation": garak_eval,
-        "top_attack_terms": top_predictive_terms(classifier, vectorizer),
-    }
-    save_report(report, f"ml_detector_{model_name}_results.json")
+    possible_text_columns = [
 
-    print("\nTraining complete. Try it out:")
-    print(f"  python src/ml_detector.py interactive --model {model_name}")
+        "text",
+
+        "prompt",
+
+        "attack",
+
+    ]
+
+    text_column = None
+
+    for column in possible_text_columns:
+
+        if column in df.columns:
+
+            text_column = column
+
+            break
+
+    if text_column is None:
+
+        raise ValueError(
+            "Could not find a prompt/text "
+            "column in Garak dataset."
+        )
+
+    result = pd.DataFrame({
+
+        "text":
+        df[text_column]
+        .astype(str),
+
+        "label":
+        [1] * len(df)
+
+    })
+
+    result["label"] = (
+        result["label"]
+        .astype(int)
+    )
+
+    result = clean_dataset(
+        result
+    )
+
+    print(
+        f"Loaded {len(result)} "
+        f"Garak attacks."
+    )
+
+    return result
 
 
-def cmd_evaluate(model_name: str) -> None:
-    vectorizer, classifier = load_model(model_name)
-    if vectorizer is None:
-        logger.error("No saved model found for '%s'. Run `train` first.", model_name)
-        return
+# ============================================================
+# BUILD TRAINING DATASET
+# ============================================================
 
-    test_path = CONFIG.datasets_dir / "test_split.csv"
-    if not test_path.exists():
-        raise DetectorError(f"No test split found at {test_path}. Run `train` first.")
+def build_dataset(
+    dataset_type
+):
 
-    test_df = pd.read_csv(test_path)
-    metrics = evaluate_on_split(classifier, vectorizer, test_df["text"], test_df["label"])
-    print(json.dumps(metrics, indent=2))
+    synthetic = (
+        load_synthetic_dataset()
+    )
 
+    if dataset_type == "synthetic":
 
-# ─────────────────────────────────────────────────────────────────
-# CLI entrypoint
-# ─────────────────────────────────────────────────────────────────
+        print(
+            "\nUsing synthetic dataset only."
+        )
 
-def build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="ML-based prompt injection detector")
-    subparsers = parser.add_subparsers(dest="command", required=True)
+        return synthetic
 
-    train_p = subparsers.add_parser("train", help="Train, evaluate, and save a model")
-    train_p.add_argument("--model", choices=list(SUPPORTED_MODELS), default="logistic_regression")
-    train_p.add_argument("--no-garak", action="store_true", help="Exclude Garak prompts from training")
-    train_p.add_argument("--no-custom", action="store_true", help="Exclude custom_attacks.csv from training")
+    if dataset_type == "combined":
 
-    eval_p = subparsers.add_parser("evaluate", help="Re-evaluate a saved model on the saved test split")
-    eval_p.add_argument("--model", choices=list(SUPPORTED_MODELS), default="logistic_regression")
+        hackaprompt = (
+            load_hackaprompt()
+        )
 
-    interactive_p = subparsers.add_parser("interactive", help="Interactively test prompts")
-    interactive_p.add_argument("--model", choices=list(SUPPORTED_MODELS), default="logistic_regression")
+        garak = (
+            load_garak()
+        )
 
-    return parser
+        print(
+            "\nCombining datasets..."
+        )
 
+        df = pd.concat(
+            [
+                synthetic,
+                hackaprompt,
+                garak,
+            ],
+            ignore_index=True
+        )
 
-def main(argv: Optional[list[str]] = None) -> int:
-    parser = build_arg_parser()
-    args = parser.parse_args(argv)
+        df["label"] = pd.to_numeric(
+            df["label"],
+            errors="raise"
+        ).astype(int)
 
-    try:
-        if args.command == "train":
-            cmd_train(
-                model_name=args.model,
-                include_garak=not args.no_garak,
-                include_custom=not args.no_custom,
+        invalid_labels = (
+            set(df["label"].unique())
+            - {0, 1}
+        )
+
+        if invalid_labels:
+
+            raise ValueError(
+                f"Invalid labels found: "
+                f"{invalid_labels}"
             )
-        elif args.command == "evaluate":
-            cmd_evaluate(args.model)
-        elif args.command == "interactive":
-            run_interactive(args.model)
-    except DetectorError as e:
-        logger.error(str(e))
-        return 1
-    except Exception:
-        logger.exception("Unexpected failure")
-        return 1
 
-    return 0
+        before = len(df)
 
+        df = df.drop_duplicates(
+            subset=[
+                "text"
+            ]
+        )
+
+        after = len(df)
+
+        print(
+            f"Removed duplicate prompts: "
+            f"{before - after}"
+        )
+
+        df = df.sample(
+            frac=1,
+            random_state=42
+        ).reset_index(
+            drop=True
+        )
+
+        print(
+            f"\nTotal combined examples: "
+            f"{len(df)}"
+        )
+
+        print(
+            "\nCombined label distribution:"
+        )
+
+        print(
+            df["label"]
+            .value_counts()
+            .sort_index()
+        )
+
+        return df
+
+    raise ValueError(
+        "Unknown dataset type: "
+        f"{dataset_type}"
+    )
+
+
+# ============================================================
+# TRAIN MODEL
+# ============================================================
+
+def train_model(
+    dataset_type
+):
+
+    print(
+        "\n"
+        + "=" * 60
+    )
+
+    print(
+        "TRAINING ML PROMPT INJECTION DETECTOR"
+    )
+
+    print(
+        "=" * 60
+    )
+
+    df = build_dataset(
+        dataset_type
+    )
+
+    print(
+        "\nDataset distribution:"
+    )
+
+    print(
+        df["label"]
+        .value_counts()
+        .sort_index()
+    )
+
+    if df["label"].nunique() < 2:
+
+        raise ValueError(
+            "Training requires both "
+            "benign (0) and attack (1) "
+            "examples."
+        )
+
+    X = df["text"]
+
+    y = df["label"]
+
+    X_train, X_test, y_train, y_test = (
+
+        train_test_split(
+
+            X,
+
+            y,
+
+            test_size=0.20,
+
+            random_state=42,
+
+            stratify=y
+
+        )
+
+    )
+
+    print(
+        f"\nTraining examples: "
+        f"{len(X_train)}"
+    )
+
+    print(
+        f"Testing examples: "
+        f"{len(X_test)}"
+    )
+
+    print(
+        "\nTraining TF-IDF vectorizer..."
+    )
+
+    vectorizer = TfidfVectorizer(
+
+        lowercase=True,
+
+        ngram_range=(1, 2),
+
+        min_df=2,
+
+        max_df=0.95,
+
+        sublinear_tf=True,
+
+        max_features=100000
+
+    )
+
+    X_train_tfidf = (
+        vectorizer.fit_transform(
+            X_train
+        )
+    )
+
+    X_test_tfidf = (
+        vectorizer.transform(
+            X_test
+        )
+    )
+
+    print(
+        "TF-IDF vocabulary size: "
+        f"{len(vectorizer.vocabulary_)}"
+    )
+
+    print(
+        "\nTraining Logistic Regression..."
+    )
+
+    classifier = LogisticRegression(
+
+        max_iter=1000,
+
+        class_weight="balanced",
+
+        random_state=42
+
+    )
+
+    classifier.fit(
+
+        X_train_tfidf,
+
+        y_train
+
+    )
+
+    probabilities = (
+
+        classifier.predict_proba(
+
+            X_test_tfidf
+
+        )[:, 1]
+
+    )
+
+    threshold = 0.50
+
+    predictions = (
+
+        probabilities >= threshold
+
+    ).astype(int)
+
+    accuracy = accuracy_score(
+        y_test,
+        predictions
+    )
+
+    precision = precision_score(
+        y_test,
+        predictions,
+        zero_division=0
+    )
+
+    recall = recall_score(
+        y_test,
+        predictions,
+        zero_division=0
+    )
+
+    f1 = f1_score(
+        y_test,
+        predictions,
+        zero_division=0
+    )
+
+    cm = confusion_matrix(
+
+        y_test,
+
+        predictions,
+
+        labels=[
+            0,
+            1
+        ]
+
+    )
+
+    tn, fp, fn, tp = cm.ravel()
+
+    fpr = (
+
+        fp / (fp + tn)
+
+        if (fp + tn) > 0
+
+        else 0
+
+    )
+
+    fnr = (
+
+        fn / (fn + tp)
+
+        if (fn + tp) > 0
+
+        else 0
+
+    )
+
+    print(
+        "\n"
+        + "=" * 60
+    )
+
+    print(
+        "MODEL RESULTS"
+    )
+
+    print(
+        "=" * 60
+    )
+
+    print(
+        f"Accuracy:  "
+        f"{accuracy * 100:.2f}%"
+    )
+
+    print(
+        f"Precision: "
+        f"{precision * 100:.2f}%"
+    )
+
+    print(
+        f"Recall:    "
+        f"{recall * 100:.2f}%"
+    )
+
+    print(
+        f"F1 Score:  "
+        f"{f1 * 100:.2f}%"
+    )
+
+    print(
+        f"False Positive Rate: "
+        f"{fpr * 100:.2f}%"
+    )
+
+    print(
+        f"False Negative Rate: "
+        f"{fnr * 100:.2f}%"
+    )
+
+    print(
+        "\nConfusion Matrix:"
+    )
+
+    print(
+        cm
+    )
+
+    print(
+        "\nClassification Report:"
+    )
+
+    print(
+
+        classification_report(
+
+            y_test,
+
+            predictions,
+
+            labels=[
+                0,
+                1
+            ],
+
+            target_names=[
+
+                "Benign",
+
+                "Attack"
+
+            ],
+
+            zero_division=0
+
+        )
+
+    )
+
+    with open(
+
+        VECTORIZER_PATH,
+
+        "wb"
+
+    ) as f:
+
+        pickle.dump(
+
+            vectorizer,
+
+            f
+
+        )
+
+    with open(
+
+        CLASSIFIER_PATH,
+
+        "wb"
+
+    ) as f:
+
+        pickle.dump(
+
+            classifier,
+
+            f
+
+        )
+
+    metrics = {
+
+        "timestamp":
+        datetime.now(
+            timezone.utc
+        ).isoformat(),
+
+        "dataset":
+        dataset_type,
+
+        "total_examples":
+        int(len(df)),
+
+        "training_examples":
+        int(len(X_train)),
+
+        "testing_examples":
+        int(len(X_test)),
+
+        "accuracy":
+        float(accuracy),
+
+        "precision":
+        float(precision),
+
+        "recall":
+        float(recall),
+
+        "f1":
+        float(f1),
+
+        "false_positive_rate":
+        float(fpr),
+
+        "false_negative_rate":
+        float(fnr),
+
+        "threshold":
+        threshold,
+
+        "confusion_matrix": {
+
+            "true_negative":
+            int(tn),
+
+            "false_positive":
+            int(fp),
+
+            "false_negative":
+            int(fn),
+
+            "true_positive":
+            int(tp)
+
+        }
+
+    }
+
+    with open(
+
+        TRAINING_METRICS_PATH,
+
+        "w",
+
+        encoding="utf-8"
+
+    ) as f:
+
+        json.dump(
+
+            metrics,
+
+            f,
+
+            indent=4
+
+        )
+
+    print(
+        f"\nModel saved to:"
+        f"\n{VECTORIZER_PATH}"
+        f"\n{CLASSIFIER_PATH}"
+    )
+
+    print(
+        f"\nMetrics saved to:"
+        f"\n{TRAINING_METRICS_PATH}"
+    )
+
+
+# ============================================================
+# LOAD TRAINED MODEL
+# ============================================================
+
+def load_model():
+
+    if not VECTORIZER_PATH.exists():
+
+        raise FileNotFoundError(
+
+            f"Vectorizer not found:\n"
+            f"{VECTORIZER_PATH}\n\n"
+
+            "Train the model first using:\n"
+
+            "python src/ml_detector.py "
+            "train --dataset synthetic"
+
+        )
+
+    if not CLASSIFIER_PATH.exists():
+
+        raise FileNotFoundError(
+
+            f"Classifier not found:\n"
+            f"{CLASSIFIER_PATH}\n\n"
+
+            "Train the model first using:\n"
+
+            "python src/ml_detector.py "
+            "train --dataset synthetic"
+
+        )
+
+    with open(
+
+        VECTORIZER_PATH,
+
+        "rb"
+
+    ) as f:
+
+        vectorizer = pickle.load(
+            f
+        )
+
+    with open(
+
+        CLASSIFIER_PATH,
+
+        "rb"
+
+    ) as f:
+
+        classifier = pickle.load(
+            f
+        )
+
+    return (
+        vectorizer,
+        classifier
+    )
+
+
+# ============================================================
+# CALCULATE METRICS
+# ============================================================
+
+def calculate_metrics(
+    y_true,
+    y_pred
+):
+
+    cm = confusion_matrix(
+
+        y_true,
+
+        y_pred,
+
+        labels=[
+            0,
+            1
+        ]
+
+    )
+
+    tn, fp, fn, tp = cm.ravel()
+
+    precision = precision_score(
+
+        y_true,
+
+        y_pred,
+
+        zero_division=0
+
+    )
+
+    recall = recall_score(
+
+        y_true,
+
+        y_pred,
+
+        zero_division=0
+
+    )
+
+    f1 = f1_score(
+
+        y_true,
+
+        y_pred,
+
+        zero_division=0
+
+    )
+
+    accuracy = accuracy_score(
+
+        y_true,
+
+        y_pred
+
+    )
+
+    fpr = (
+
+        fp / (fp + tn)
+
+        if (fp + tn) > 0
+
+        else 0
+
+    )
+
+    fnr = (
+
+        fn / (fn + tp)
+
+        if (fn + tp) > 0
+
+        else 0
+
+    )
+
+    return {
+
+        "accuracy":
+        float(accuracy),
+
+        "precision":
+        float(precision),
+
+        "recall":
+        float(recall),
+
+        "f1":
+        float(f1),
+
+        "false_positive_rate":
+        float(fpr),
+
+        "false_negative_rate":
+        float(fnr),
+
+        "true_negative":
+        int(tn),
+
+        "false_positive":
+        int(fp),
+
+        "false_negative":
+        int(fn),
+
+        "true_positive":
+        int(tp)
+
+    }
+
+
+# ============================================================
+# EVALUATE ON HELD-OUT DATASET
+# ============================================================
+
+def evaluate_model(
+    dataset_path,
+    threshold
+):
+
+    print(
+        "\n"
+        + "=" * 70
+    )
+
+    print(
+        "EVALUATING ML DETECTOR ON HELD-OUT DATASET"
+    )
+
+    print(
+        "=" * 70
+    )
+
+    dataset_path = Path(
+        dataset_path
+    )
+
+    if not dataset_path.is_absolute():
+
+        dataset_path = (
+            BASE_DIR
+            / dataset_path
+        )
+
+    if not dataset_path.exists():
+
+        raise FileNotFoundError(
+
+            f"Evaluation dataset not found:\n"
+            f"{dataset_path}"
+
+        )
+
+    print(
+        f"Dataset:\n"
+        f"{dataset_path}"
+    )
+
+    df = pd.read_csv(
+        dataset_path
+    )
+
+    required_columns = {
+
+        "text",
+
+        "label",
+
+    }
+
+    missing = (
+
+        required_columns
+        - set(df.columns)
+
+    )
+
+    if missing:
+
+        raise ValueError(
+
+            f"Evaluation dataset is missing "
+            f"required columns: {missing}"
+
+        )
+
+    # Keep metadata if available
+
+    evaluation_columns = [
+
+        "id",
+
+        "text",
+
+        "label",
+
+        "attack_type",
+
+        "difficulty",
+
+        "language",
+
+        "source",
+
+        "notes",
+
+    ]
+
+    available_columns = [
+
+        column
+
+        for column in evaluation_columns
+
+        if column in df.columns
+
+    ]
+
+    df = df[
+        available_columns
+    ].copy()
+
+    df = df.dropna(
+        subset=[
+            "text",
+            "label"
+        ]
+    )
+
+    df["text"] = (
+
+        df["text"]
+
+        .astype(str)
+
+        .str.strip()
+
+    )
+
+    df["label"] = pd.to_numeric(
+
+        df["label"],
+
+        errors="raise"
+
+    ).astype(int)
+
+    invalid_labels = (
+
+        set(df["label"].unique())
+
+        - {0, 1}
+
+    )
+
+    if invalid_labels:
+
+        raise ValueError(
+
+            f"Invalid labels: "
+            f"{invalid_labels}"
+
+        )
+
+    print(
+        f"\nEvaluation examples: "
+        f"{len(df)}"
+    )
+
+    print(
+        "\nEvaluation label distribution:"
+    )
+
+    print(
+        df["label"]
+        .value_counts()
+        .sort_index()
+    )
+
+    vectorizer, classifier = (
+        load_model()
+    )
+
+    texts = (
+        df["text"]
+        .tolist()
+    )
+
+    y_true = (
+        df["label"]
+        .to_numpy()
+    )
+
+    print(
+        "\nRunning predictions..."
+    )
+
+    latencies_ms = []
+
+    probabilities = []
+
+    predictions = []
+
+    for text in texts:
+
+        start = time.perf_counter()
+
+        vector = (
+            vectorizer.transform(
+                [text]
+            )
+        )
+
+        probability = (
+
+            classifier.predict_proba(
+
+                vector
+
+            )[0][1]
+
+        )
+
+        prediction = int(
+
+            probability >= threshold
+
+        )
+
+        end = time.perf_counter()
+
+        latency_ms = (
+
+            end - start
+
+        ) * 1000
+
+        latencies_ms.append(
+            latency_ms
+        )
+
+        probabilities.append(
+            float(probability)
+        )
+
+        predictions.append(
+            prediction
+        )
+
+    y_pred = (
+        pd.Series(
+            predictions
+        ).to_numpy()
+    )
+
+    overall = calculate_metrics(
+
+        y_true,
+
+        y_pred
+
+    )
+
+    # --------------------------------------------------------
+    # Latency
+    # --------------------------------------------------------
+
+    latency_series = pd.Series(
+        latencies_ms
+    )
+
+    median_latency = (
+        latency_series.median()
+    )
+
+    p95_latency = (
+
+        latency_series.quantile(
+            0.95
+        )
+
+    )
+
+    total_time_seconds = (
+
+        sum(latencies_ms)
+
+        / 1000
+
+    )
+
+    throughput = (
+
+        len(texts)
+
+        / total_time_seconds
+
+        if total_time_seconds > 0
+
+        else 0
+
+    )
+
+    # --------------------------------------------------------
+    # Per-category metrics
+    # --------------------------------------------------------
+
+    per_category = {}
+
+    if "attack_type" in df.columns:
+
+        for category in sorted(
+
+            df["attack_type"]
+            .dropna()
+            .unique()
+
+        ):
+
+            mask = (
+
+                df["attack_type"]
+
+                == category
+
+            )
+
+            category_true = (
+
+                y_true[mask]
+
+            )
+
+            category_pred = (
+
+                y_pred[mask]
+
+            )
+
+            per_category[category] = {
+
+                "samples":
+                int(mask.sum()),
+
+                **calculate_metrics(
+
+                    category_true,
+
+                    category_pred
+
+                )
+
+            }
+
+    # --------------------------------------------------------
+    # Save row-level predictions
+    # --------------------------------------------------------
+
+    prediction_df = df.copy()
+
+    prediction_df[
+        "attack_probability"
+    ] = probabilities
+
+    prediction_df[
+        "predicted_label"
+    ] = predictions
+
+    prediction_df[
+        "correct"
+    ] = (
+
+        prediction_df[
+            "label"
+        ]
+
+        == prediction_df[
+            "predicted_label"
+        ]
+
+    )
+
+    prediction_output_path = (
+
+        RESULTS_DIR
+
+        / "ml_detector_eval_predictions.csv"
+
+    )
+
+    prediction_df.to_csv(
+
+        prediction_output_path,
+
+        index=False
+
+    )
+
+    # --------------------------------------------------------
+    # Build results
+    # --------------------------------------------------------
+
+    results = {
+
+        "experiment": {
+
+            "name":
+            "ML Detector Held-Out Evaluation",
+
+            "timestamp":
+            datetime.now(
+                timezone.utc
+            ).isoformat(),
+
+            "dataset":
+            str(
+                dataset_path
+            ),
+
+            "total_samples":
+            int(len(df)),
+
+            "threshold":
+            float(threshold),
+
+            "model":
+            "TF-IDF + Logistic Regression",
+
+            "vectorizer":
+            "TfidfVectorizer",
+
+            "ngram_range":
+            [1, 2],
+
+            "platform":
+            platform.platform(),
+
+            "python_version":
+            sys.version,
+
+        },
+
+        "overall_metrics":
+        overall,
+
+        "latency_ms": {
+
+            "median":
+            float(
+                median_latency
+            ),
+
+            "p95":
+            float(
+                p95_latency
+            ),
+
+            "mean":
+            float(
+                latency_series.mean()
+            ),
+
+            "min":
+            float(
+                latency_series.min()
+            ),
+
+            "max":
+            float(
+                latency_series.max()
+            )
+
+        },
+
+        "throughput": {
+
+            "samples_per_second":
+            float(
+                throughput
+            ),
+
+            "total_prediction_time_seconds":
+            float(
+                total_time_seconds
+            )
+
+        },
+
+        "per_category":
+        per_category,
+
+        "prediction_output":
+        str(
+            prediction_output_path
+        )
+
+    }
+
+    with open(
+
+        EVALUATION_METRICS_PATH,
+
+        "w",
+
+        encoding="utf-8"
+
+    ) as f:
+
+        json.dump(
+
+            results,
+
+            f,
+
+            indent=4
+
+        )
+
+    # --------------------------------------------------------
+    # Print results
+    # --------------------------------------------------------
+
+    print(
+        "\n"
+        + "=" * 70
+    )
+
+    print(
+        "HELD-OUT EVALUATION RESULTS"
+    )
+
+    print(
+        "=" * 70
+    )
+
+    print(
+        f"Accuracy:  "
+        f"{overall['accuracy'] * 100:.2f}%"
+    )
+
+    print(
+        f"Precision: "
+        f"{overall['precision'] * 100:.2f}%"
+    )
+
+    print(
+        f"Recall:    "
+        f"{overall['recall'] * 100:.2f}%"
+    )
+
+    print(
+        f"F1 Score:  "
+        f"{overall['f1'] * 100:.2f}%"
+    )
+
+    print(
+        f"FPR:       "
+        f"{overall['false_positive_rate'] * 100:.2f}%"
+    )
+
+    print(
+        f"FNR:       "
+        f"{overall['false_negative_rate'] * 100:.2f}%"
+    )
+
+    print(
+        "\nConfusion Matrix:"
+    )
+
+    print(
+        f"TN: {overall['true_negative']}"
+    )
+
+    print(
+        f"FP: {overall['false_positive']}"
+    )
+
+    print(
+        f"FN: {overall['false_negative']}"
+    )
+
+    print(
+        f"TP: {overall['true_positive']}"
+    )
+
+    print(
+        f"\nMedian latency: "
+        f"{median_latency:.3f} ms"
+    )
+
+    print(
+        f"P95 latency: "
+        f"{p95_latency:.3f} ms"
+    )
+
+    print(
+        f"Throughput: "
+        f"{throughput:.2f} samples/sec"
+    )
+
+    # --------------------------------------------------------
+    # Category results
+    # --------------------------------------------------------
+
+    if per_category:
+
+        print(
+            "\n"
+            + "=" * 70
+        )
+
+        print(
+            "PER-CATEGORY RESULTS"
+        )
+
+        print(
+            "=" * 70
+        )
+
+        for category, metrics in (
+            per_category.items()
+        ):
+
+            print(
+                f"\n{category}"
+            )
+
+            print(
+                f"  Samples: "
+                f"{metrics['samples']}"
+            )
+
+            print(
+                f"  Precision: "
+                f"{metrics['precision'] * 100:.2f}%"
+            )
+
+            print(
+                f"  Recall: "
+                f"{metrics['recall'] * 100:.2f}%"
+            )
+
+            print(
+                f"  F1: "
+                f"{metrics['f1'] * 100:.2f}%"
+            )
+
+            print(
+                f"  FPR: "
+                f"{metrics['false_positive_rate'] * 100:.2f}%"
+            )
+
+            print(
+                f"  FNR: "
+                f"{metrics['false_negative_rate'] * 100:.2f}%"
+            )
+
+    print(
+        "\nResults saved to:"
+    )
+
+    print(
+        EVALUATION_METRICS_PATH
+    )
+
+    print(
+        "\nRow-level predictions saved to:"
+    )
+
+    print(
+        prediction_output_path
+    )
+
+
+# ============================================================
+# INTERACTIVE TESTING
+# ============================================================
+
+def interactive_test():
+
+    print(
+        "\nLoading trained model..."
+    )
+
+    vectorizer, classifier = (
+        load_model()
+    )
+
+    print(
+        "\n"
+        + "=" * 60
+    )
+
+    print(
+        "INTERACTIVE PROMPT INJECTION DETECTOR"
+    )
+
+    print(
+        "Type 'exit' or 'quit' to stop."
+    )
+
+    print(
+        "=" * 60
+    )
+
+    while True:
+
+        try:
+
+            text = input(
+                "\nEnter prompt: "
+            )
+
+        except (
+            KeyboardInterrupt,
+            EOFError
+        ):
+
+            print(
+                "\n\nExiting..."
+            )
+
+            break
+
+        if text.lower().strip() in [
+
+            "exit",
+
+            "quit"
+
+        ]:
+
+            print(
+                "\nExiting detector..."
+            )
+
+            break
+
+        if not text.strip():
+
+            print(
+                "Please enter a prompt."
+            )
+
+            continue
+
+        vector = (
+
+            vectorizer.transform(
+
+                [text]
+
+            )
+
+        )
+
+        probability = (
+
+            classifier.predict_proba(
+
+                vector
+
+            )[0][1]
+
+        )
+
+        prediction = (
+
+            probability >= 0.50
+
+        )
+
+        print(
+
+            f"\nAttack probability: "
+            f"{probability * 100:.2f}%"
+
+        )
+
+        if prediction:
+
+            print(
+
+                "RESULT: "
+                "PROMPT INJECTION DETECTED"
+
+            )
+
+        else:
+
+            print(
+
+                "RESULT: "
+                "BENIGN"
+
+            )
+
+
+# ============================================================
+# MAIN
+# ============================================================
+
+def main():
+
+    parser = argparse.ArgumentParser(
+
+        description=(
+
+            "ML-based Prompt Injection Detector"
+
+        )
+
+    )
+
+    subparsers = (
+
+        parser.add_subparsers(
+
+            dest="command"
+
+        )
+
+    )
+
+    # ========================================================
+    # TRAIN
+    # ========================================================
+
+    train_parser = (
+
+        subparsers.add_parser(
+
+            "train",
+
+            help=(
+                "Train the ML detector"
+            )
+
+        )
+
+    )
+
+    train_parser.add_argument(
+
+        "--dataset",
+
+        choices=[
+
+            "synthetic",
+
+            "combined"
+
+        ],
+
+        default="synthetic",
+
+        help=(
+            "Training dataset source"
+        )
+
+    )
+
+    # ========================================================
+    # EVALUATE
+    # ========================================================
+
+    evaluate_parser = (
+
+        subparsers.add_parser(
+
+            "evaluate",
+
+            help=(
+                "Evaluate trained detector "
+                "on held-out dataset"
+            )
+
+        )
+
+    )
+
+    evaluate_parser.add_argument(
+
+        "--dataset",
+
+        required=True,
+
+        help=(
+            "Path to held-out evaluation CSV"
+        )
+
+    )
+
+    evaluate_parser.add_argument(
+
+        "--threshold",
+
+        type=float,
+
+        default=0.50,
+
+        help=(
+            "Attack probability threshold "
+            "(default: 0.50)"
+        )
+
+    )
+
+    # ========================================================
+    # TEST
+    # ========================================================
+
+    subparsers.add_parser(
+
+        "test",
+
+        help=(
+            "Run interactive testing"
+        )
+
+    )
+
+    # ========================================================
+    # PARSE
+    # ========================================================
+
+    args = parser.parse_args()
+
+    # ========================================================
+    # EXECUTE
+    # ========================================================
+
+    if args.command == "train":
+
+        train_model(
+
+            args.dataset
+
+        )
+
+    elif args.command == "evaluate":
+
+        if not (
+            0.0
+            <= args.threshold
+            <= 1.0
+        ):
+
+            raise ValueError(
+
+                "Threshold must be "
+                "between 0.0 and 1.0."
+
+            )
+
+        evaluate_model(
+
+            args.dataset,
+
+            args.threshold
+
+        )
+
+    elif args.command == "test":
+
+        interactive_test()
+
+    else:
+
+        parser.print_help()
+
+
+# ============================================================
+# ENTRY POINT
+# ============================================================
 
 if __name__ == "__main__":
-    sys.exit(main())
+
+    main()
