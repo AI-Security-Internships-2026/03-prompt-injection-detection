@@ -99,6 +99,24 @@ python src/main.py
 
 ---
 
+## Roadmap to September 8, 2026
+
+**Current state:** ML detector benchmarked against Meta's Llama Prompt Guard and Protect AI's LLM Guard (PR #10, merged) — best speed/accuracy in that comparison, but weak on multilingual (4% recall) and encoded/obfuscated attacks (62%). Stale `Dev` PR (#4) should be closed (issue #12). A Phase 2 research assignment already exists (issue #11): KV-cache persistence as a multi-turn injection vector — this is the project's real novel-contribution track.
+
+**Novel contribution target:** the Phase 2 KV-cache work in issue #11 — most guardrails (including the ones just benchmarked) only look at a single turn. Showing an attack that persists across turns via the KV cache, and that current guardrails miss it, is a genuinely new result.
+
+| Date | Milestone |
+|---|---|
+| Aug 2 | Close stale PR #4; land any remaining single-turn detector fixes (multilingual/encoded coverage) |
+| Aug 9 | Phase 2 start (issue #11): reproduce basic KV-cache persistence/leakage behavior across conversation turns |
+| Aug 16 | Build a detection/mitigation approach targeting the multi-turn KV-cache vector specifically |
+| Aug 23 | Benchmark against the existing single-turn-only guardrails (LLM Guard, Prompt Guard) to show what they miss |
+| Aug 30 | Full write-up of the multi-turn KV-cache threat + mitigation — this is the standout result |
+| Sep 6 | Paper/report draft |
+| **Sep 8** | **Final submission** |
+
+---
+
 ## Supervisor Note
 
 This repository is managed by **CNIT/PNTLab Pisa, TECIP, Scuola Superiore Sant'Anna**.
