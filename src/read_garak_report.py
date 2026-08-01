@@ -13,8 +13,8 @@ Garak report format reference:
 https://github.com/NVIDIA/garak
 """
 
-import json
 import glob
+import json
 import os
 
 
@@ -38,7 +38,7 @@ def load_report_entries(report_path: str) -> list:
     Each line is its own independent JSON object.
     """
     entries = []
-    with open(report_path, "r", encoding="utf-8") as f:
+    with open(report_path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -81,15 +81,15 @@ def extract_attack_prompts(entries: list) -> list:
 
 
 def main() -> None:
-    reports_dir = os.path.expanduser(
-        r"~\.local\share\garak\garak_runs"
-    )
+    reports_dir = os.path.expanduser(r"~\.local\share\garak\garak_runs")
 
     report_path = find_latest_report(reports_dir)
     if not report_path:
         print(f"No Garak reports found in {reports_dir}")
         print("Run a Garak scan first:")
-        print("  python -m garak --target_type huggingface --target_name gpt2 --probes promptinject")
+        print(
+            "  python -m garak --target_type huggingface --target_name gpt2 --probes promptinject"
+        )
         return
 
     print(f"Reading report: {report_path}\n")

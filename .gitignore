@@ -11,9 +11,17 @@ build/
 
 # Virtual environments
 .venv/
+.venv*/
 venv/
 env/
 ENV/
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # IDE / editor
 .vscode/
@@ -40,11 +48,16 @@ datasets/**/*.zip
 datasets/**/*.tar.gz
 datasets/**/*.pcap
 
-# Model checkpoints
+# Model checkpoints / serialized artifacts (audit C1: do not commit binaries;
+# they are non-portable across numpy/sklearn versions and violate repo policy)
 *.pt
 *.pth
 *.onnx
 *.bin
+*.pkl
+*.joblib
+# (model binaries above are ignored; experiments/models/artifact_manifest.json
+#  is a small JSON provenance record and IS tracked — do not ignore the dir)
 checkpoints/
 models/weights/
 
@@ -71,3 +84,8 @@ experiments/results/*.pdf
 
 datasets/train_split.csv
 datasets/test_split.csv
+
+# RANA training data: regenerable via scripts/fetch_data.py (provenance JSON IS committed)
+datasets/rana_train.csv
+# RANA multilingual augmentation: regenerable via scripts/augment_multilingual.py
+datasets/rana_multilingual_aug.csv

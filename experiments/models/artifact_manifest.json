@@ -1,0 +1,47 @@
+{
+  "_comment": "Provenance + integrity manifest for serialized model artifacts. Consumed by src/model_loader.py, which refuses to deserialize any artifact whose SHA-256 does not match here or whose 'trusted' flag is false. See the security audit notes (C1).",
+  "_verification": {
+    "verified_on_python": "3.14.6",
+    "verified_numpy": "2.5.1",
+    "verified_sklearn": "1.9.0",
+    "load_result": "loads, but emits sklearn InconsistentVersionWarning",
+    "cross_version_result": "INVALID \u2014 reproduced held-out accuracy 0.506 / recall 0.064 vs intern-reported 0.889 / 0.836; the TF-IDF pipeline unpickled from sklearn 1.7.1 into 1.9.0 does not reproduce the trained transformation. Predictions are unusable.",
+    "conclusion": "Artifact is NOT reproducible across scikit-learn versions and must be regenerated from training data (currently missing). C1 remains unresolved."
+  },
+  "classifier.pkl": {
+    "sha256": "da6289de116621602b88f58f1a8d2169086f2ae442211abfc42aefffd9c07002",
+    "source": "committed repository artifact",
+    "trusted": false,
+    "producer_python": "unknown",
+    "producer_numpy": "2.x (numpy._core present in serialized array state)",
+    "producer_sklearn": "1.7.1 (from InconsistentVersionWarning)",
+    "notes": "LogisticRegression. Loads on sklearn 1.9.0 with a version warning but yields invalid predictions (see _verification)."
+  },
+  "vectorizer.pkl": {
+    "sha256": "03d9dc8935201563d34ad0f594fd28e6991dae117026e8b1875018eccfe4d991",
+    "source": "committed repository artifact",
+    "trusted": false,
+    "producer_python": "unknown",
+    "producer_numpy": "2.x (numpy._core present in serialized array state)",
+    "producer_sklearn": "1.7.1 (from InconsistentVersionWarning)",
+    "notes": "TfidfVectorizer. Cross-version unpickling changes the TF-IDF transform; not equivalent to the trained model."
+  },
+  "rana_vectorizer.joblib": {
+    "sha256": "beabf51f21ef79daf3f2307460159779ca96ec8e58f5b44588ebcdeb55af64f2",
+    "source": "built by scripts/train_rana.py from datasets/rana_train.csv",
+    "trusted": true,
+    "producer_python": "3.14.6",
+    "producer_numpy": "2.5.1",
+    "producer_sklearn": "1.9.0",
+    "notes": "Reproducible RANA model; rebuild via fetch_data.py + train_rana.py."
+  },
+  "rana_classifier.joblib": {
+    "sha256": "86ad9e16d6c3e3dc26b0f3e05d7c1dd88f720ccdf6f1b9ff4103868a644b446d",
+    "source": "built by scripts/train_rana.py from datasets/rana_train.csv",
+    "trusted": true,
+    "producer_python": "3.14.6",
+    "producer_numpy": "2.5.1",
+    "producer_sklearn": "1.9.0",
+    "notes": "Reproducible RANA model; rebuild via fetch_data.py + train_rana.py."
+  }
+}
