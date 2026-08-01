@@ -48,6 +48,14 @@ comparison = [
 garak = [
     "garak>=0.9,<1",
 ]
+# Transformer prompt-guard baselines for the canonicalization experiment
+# (e.g. PIGuard / leolee99, microsoft/deberta-v3-base). Heavy: pulls torch.
+guards = [
+    "huggingface-hub>=0.24",
+    "torch>=2.4,<3",
+    "transformers>=4.44,<6",
+    "sentencepiece>=0.2,<1",
+]
 # Training-data fetch + multilingual augmentation for the reproducible RANA model.
 data = [
     "datasets>=2.20,<5",
@@ -70,6 +78,8 @@ py-modules = [
     "provider_outcome",
     "eval_checks",
     "rana_model",
+    "canonicalize",
+    "adversarial",
     "ml_detector",
     "test_harness",
     "interactive_tester",
@@ -90,7 +100,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["detection_utils", "model_loader", "provider_outcome", "eval_checks", "rana_model"]
+source = ["detection_utils", "model_loader", "provider_outcome", "eval_checks", "rana_model", "canonicalize", "adversarial"]
 branch = true
 
 [tool.coverage.report]
