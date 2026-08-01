@@ -74,6 +74,9 @@ Homepage = "https://github.com/AI-Security-Internships-2026/03-prompt-injection-
 package-dir = { "" = "src" }
 py-modules = [
     "detection_utils",
+    "canonicalize",
+    "adversarial",
+    "multiturn",
     "model_loader",
     "provider_outcome",
     "eval_checks",
@@ -100,7 +103,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["detection_utils", "model_loader", "provider_outcome", "eval_checks", "rana_model", "canonicalize", "adversarial"]
+source = ["detection_utils", "model_loader", "provider_outcome", "eval_checks", "rana_model", "canonicalize", "adversarial", "multiturn"]
 branch = true
 
 [tool.coverage.report]
