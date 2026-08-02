@@ -23,9 +23,20 @@ attacks with and without this front-end (see scripts/eval_canonicalization.py).
 
 from __future__ import annotations
 
+import unicodedata
 from collections.abc import Callable
 
-from detection_utils import MAX_INPUT_CHARS, decode_layers, normalize_text
+from detection_utils import (
+    _BASE64_RE,
+    _CONFUSABLES,
+    _HEX_RE,
+    _ZERO_WIDTH,
+    MAX_INPUT_CHARS,
+    _decode_base64,
+    _decode_hex,
+    decode_layers,
+    normalize_text,
+)
 
 MAX_VIEWS = 8
 
@@ -78,3 +89,51 @@ def wrap_guard(score_fn: Callable[[str], float]) -> Callable[[str], float]:
         return max(float(score_fn(v)) for v in views)
 
     return wrapped
+
+
+def de_obfuscate(text: str) -> str:
+    """Case-preserving Unicode de-obfuscation: NFKC + zero-width strip + confusable fold.
+
+    Unlike ``detection_utils.normalize_text`` this keeps the original case, so
+    the cleaned text can be handed to a case-sensitive transformer guard.
+    """
+    if not text:
+        return ""
+    t = unicodedata.normalize("NFKC", text[:MAX_INPUT_CHARS])
+    t = t.translate(_ZERO_WIDTH)
+    return "".join(_CONFUSABLES.get(ch, ch) for ch in t)
+
+
+def canonicalize(text: str) -> str:
+    """Return a single canonical form of ``text`` to feed a guard *in place of* the raw input.
+
+    Decodes base64/hex tokens **inline** (replacing the noisy blob with its
+    plaintext) and de-obfuscates Unicode. Unlike :func:`wrap_guard` (which
+    max-pools and can only raise a score), replacing the input fixes guards that
+    *over-react* to encoded/high-entropy strings (e.g. PIGuard flags benign
+    base64 as an attack) as well as guards that *under-react* (e.g. LLM Guard
+    misses encoded attacks) — the guard simply scores the real content.
+
+    ROT13 is intentionally not applied here: every string ROT13-decodes to
+    something, so blind replacement would corrupt normal text. ROT13 coverage
+    stays in :func:`wrap_guard`'s view set.
+    """
+    if not text:
+        return ""
+    t = de_obfuscate(text)
+    t = _BASE64_RE.sub(lambda m: _decode_base64(m.group(0)) or m.group(0), t)
+    t = _HEX_RE.sub(lambda m: _decode_hex(m.group(0)) or m.group(0), t)
+    return t
+
+
+def guard_canonicalized(score_fn: Callable[[str], float]) -> Callable[[str], float]:
+    """Wrap a guard so it scores :func:`canonicalize` output instead of the raw text.
+
+    The decode-then-classify strategy: fixes both under- and over-reacting guards
+    on encoded / Unicode-obfuscated input without retraining.
+    """
+
+    def scored(text: str) -> float:
+        return float(score_fn(canonicalize(text)))
+
+    return scored
