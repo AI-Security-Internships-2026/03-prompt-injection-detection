@@ -77,6 +77,7 @@ py-modules = [
     "canonicalize",
     "adversarial",
     "multiturn",
+    "hardened_guard",
     "model_loader",
     "provider_outcome",
     "eval_checks",
@@ -103,7 +104,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["detection_utils", "model_loader", "provider_outcome", "eval_checks", "rana_model", "canonicalize", "adversarial", "multiturn"]
+source = ["detection_utils", "model_loader", "provider_outcome", "eval_checks", "rana_model", "canonicalize", "adversarial", "multiturn", "hardened_guard"]
 branch = true
 
 [tool.coverage.report]
