@@ -61,6 +61,10 @@ data = [
     "datasets>=2.20,<5",
     "deep-translator>=1.11,<2",
 ]
+# Figures for the evaluation write-up (scripts/plot_pareto.py).
+viz = [
+    "matplotlib>=3.7,<4",
+]
 
 [project.urls]
 Homepage = "https://github.com/AI-Security-Internships-2026/03-prompt-injection-detection"
