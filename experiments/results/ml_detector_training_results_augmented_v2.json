@@ -1,0 +1,22 @@
+{
+    "timestamp": "2026-07-29T07:03:58.370976+00:00",
+    "dataset_type": "augmented_v2",
+    "model_tag": "augmented_v2",
+    "total_examples": 1720,
+    "training_examples": 1376,
+    "testing_examples": 344,
+    "tfidf_vocabulary_size": 5585,
+    "accuracy": 0.9941860465116279,
+    "precision": 0.9885057471264368,
+    "recall": 1.0,
+    "f1": 0.9942196531791907,
+    "false_positive_rate": 0.011627906976744186,
+    "false_negative_rate": 0.0,
+    "threshold": 0.5,
+    "confusion_matrix": {
+        "true_negative": 170,
+        "false_positive": 2,
+        "false_negative": 0,
+        "true_positive": 172
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "experiment": {
+        "name": "ML Detector Held-Out Evaluation",
+        "timestamp": "2026-08-03T11:54:17.107501+00:00",
+        "dataset": "C:\\Users\\Ehsan Ullah\\03-prompt-injection-detection\\datasets\\deepset_eval.csv",
+        "model_tag": "synthetic",
+        "total_samples": 662,
+        "threshold": 0.5,
+        "model": "TF-IDF + Logistic Regression",
+        "platform": "Windows-11-10.0.26100-SP0",
+        "python_version": "3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]"
+    },
+    "overall_metrics": {
+        "accuracy": 0.7250755287009063,
+        "precision": 0.9175257731958762,
+        "recall": 0.33840304182509506,
+        "f1": 0.49444444444444446,
+        "false_positive_rate": 0.020050125313283207,
+        "false_negative_rate": 0.6615969581749049,
+        "true_negative": 391,
+        "false_positive": 8,
+        "false_negative": 174,
+        "true_positive": 89
+    },
+    "latency_ms": {
+        "median": 1.0321499994461192,
+        "p95": 3.184265000891173,
+        "mean": 1.3942074017498154
+    },
+    "per_category": {},
+    "prediction_output": "C:\\Users\\Ehsan Ullah\\03-prompt-injection-detection\\experiments\\results\\ml_detector_eval_predictions_synthetic.csv"
+}

@@ -1,0 +1,22 @@
+{
+    "timestamp": "2026-07-29T12:36:03.970208+00:00",
+    "dataset_type": "combined",
+    "model_tag": "combined",
+    "total_examples": 1437,
+    "training_examples": 1149,
+    "testing_examples": 288,
+    "tfidf_vocabulary_size": 4436,
+    "accuracy": 0.9861111111111112,
+    "precision": 1.0,
+    "recall": 0.9787234042553191,
+    "f1": 0.989247311827957,
+    "false_positive_rate": 0.0,
+    "false_negative_rate": 0.02127659574468085,
+    "threshold": 0.5,
+    "confusion_matrix": {
+        "true_negative": 100,
+        "false_positive": 0,
+        "false_negative": 4,
+        "true_positive": 184
+    }
+}

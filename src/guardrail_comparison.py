@@ -25,6 +25,18 @@ Not comparable:
 Evaluation dataset:
     datasets/eval_dataset_v2.csv
 
+Model to evaluate:
+    Selected via --model-tag (default: synthetic), matching the tag
+    used when training with ml_detector.py, e.g.:
+        python src/ml_detector.py train --dataset synthetic
+        python src/ml_detector.py train --dataset augmented_combined
+    Loads experiments/models/vectorizer_<tag>.pkl and
+    classifier_<tag>.pkl - these paths are tag-based because
+    ml_detector.py never writes an untagged vectorizer.pkl/
+    classifier.pkl, only tagged variants (one file set per
+    dataset type, so retraining on augmented data never silently
+    overwrites the baseline model).
+
 Expected dataset columns:
     id
     text
@@ -40,7 +52,9 @@ Label convention:
     1 = prompt injection
 
 Output:
-    experiments/results/guardrail_comparison.json
+    experiments/results/guardrail_comparison_<model-tag>.json
+    (one file per tag, so a baseline run and an improved run never
+    overwrite each other - run once per tag you want to compare)
 
 Important benchmark rules:
     - Every comparable detector receives exactly the same dataset.
@@ -86,26 +100,31 @@ MODEL_DIR = (
     / "models"
 )
 
-VECTORIZER_PATH = (
-    MODEL_DIR
-    / "vectorizer.pkl"
-)
-
-CLASSIFIER_PATH = (
-    MODEL_DIR
-    / "classifier.pkl"
-)
-
 RESULTS_DIR = (
     ROOT_DIR
     / "experiments"
     / "results"
 )
 
-OUTPUT_PATH = (
-    RESULTS_DIR
-    / "guardrail_comparison.json"
-)
+
+# ============================================================
+# TAGGED MODEL / OUTPUT PATHS
+# (must match ml_detector.py's vectorizer_path()/classifier_path()
+#  naming exactly, since ml_detector.py never writes an untagged
+#  "vectorizer.pkl"/"classifier.pkl" - only tagged variants like
+#  "vectorizer_synthetic.pkl", "vectorizer_augmented_combined.pkl")
+# ============================================================
+
+def vectorizer_path(tag):
+    return MODEL_DIR / f"vectorizer_{tag}.pkl"
+
+
+def classifier_path(tag):
+    return MODEL_DIR / f"classifier_{tag}.pkl"
+
+
+def comparison_output_path(tag):
+    return RESULTS_DIR / f"guardrail_comparison_{tag}.json"
 
 
 # ============================================================
@@ -596,32 +615,40 @@ def load_dataset(
 # ML DETECTOR
 # ============================================================
 
-def load_ml_detector():
+def load_ml_detector(model_tag):
 
     print(
-        "\nLoading repository ML detector..."
+        "\nLoading repository ML detector "
+        f"(tag: {model_tag})..."
     )
 
-    if not VECTORIZER_PATH.exists():
+    vec_path = vectorizer_path(model_tag)
+    clf_path = classifier_path(model_tag)
+
+    if not vec_path.exists():
 
         raise FileNotFoundError(
 
-            "Vectorizer not found:\n"
-            f"{VECTORIZER_PATH}"
+            f"Vectorizer not found for tag '{model_tag}':\n"
+            f"{vec_path}\n\n"
+            f"Train it first, e.g.:\n"
+            f"python src/ml_detector.py train --dataset {model_tag}"
 
         )
 
-    if not CLASSIFIER_PATH.exists():
+    if not clf_path.exists():
 
         raise FileNotFoundError(
 
-            "Classifier not found:\n"
-            f"{CLASSIFIER_PATH}"
+            f"Classifier not found for tag '{model_tag}':\n"
+            f"{clf_path}\n\n"
+            f"Train it first, e.g.:\n"
+            f"python src/ml_detector.py train --dataset {model_tag}"
 
         )
 
     with open(
-        VECTORIZER_PATH,
+        vec_path,
         "rb"
     ) as f:
 
@@ -630,7 +657,7 @@ def load_ml_detector():
         )
 
     with open(
-        CLASSIFIER_PATH,
+        clf_path,
         "rb"
     ) as f:
 
@@ -639,11 +666,11 @@ def load_ml_detector():
         )
 
     print(
-        "ML vectorizer loaded."
+        f"ML vectorizer loaded from: {vec_path}"
     )
 
     print(
-        "ML classifier loaded."
+        f"ML classifier loaded from: {clf_path}"
     )
 
     return (
@@ -1478,6 +1505,27 @@ def main():
 
     )
 
+    parser.add_argument(
+
+        "--model-tag",
+
+        type=str,
+
+        default="synthetic",
+
+        help=(
+
+            "Which trained model to load, identified by the tag used "
+            "when it was trained (see ml_detector.py train --model-tag). "
+            "Must match an existing vectorizer_<tag>.pkl / "
+            "classifier_<tag>.pkl pair in experiments/models/. "
+            "Examples: synthetic, combined, augmented, augmented_v2, "
+            "augmented_combined, or a custom tag."
+
+        )
+
+    )
+
     args = parser.parse_args()
 
     dataset_path = Path(
@@ -1495,6 +1543,12 @@ def main():
             dataset_path
 
         )
+
+    model_tag = args.model_tag
+
+    output_path = comparison_output_path(
+        model_tag
+    )
 
     print(
 
@@ -1524,8 +1578,15 @@ def main():
 
     print(
 
+        f"Model tag: "
+        f"{model_tag}"
+
+    )
+
+    print(
+
         f"Output: "
-        f"{OUTPUT_PATH}"
+        f"{output_path}"
 
     )
 
@@ -1552,7 +1613,9 @@ def main():
 
     vectorizer, classifier = (
 
-        load_ml_detector()
+        load_ml_detector(
+            model_tag
+        )
 
     )
 
@@ -1592,8 +1655,8 @@ def main():
 
     ] = benchmark_detector(
 
-        "Our ML Detector "
-        "(TF-IDF + Logistic Regression)",
+        f"Our ML Detector "
+        f"(TF-IDF + Logistic Regression, tag: {model_tag})",
 
         df,
 
@@ -1856,14 +1919,17 @@ def main():
 
             {
 
+                "ml_model_tag":
+                    model_tag,
+
                 "ml_vectorizer":
                     str(
-                        VECTORIZER_PATH
+                        vectorizer_path(model_tag)
                     ),
 
                 "ml_classifier":
                     str(
-                        CLASSIFIER_PATH
+                        classifier_path(model_tag)
                     ),
 
                 "llama_prompt_guard":
@@ -1932,15 +1998,16 @@ def main():
 
         "pip install -r requirements.txt",
 
-        "python src/ml_detector.py "
-        "train --dataset synthetic",
+        f"python src/ml_detector.py "
+        f"train --dataset {model_tag}",
 
-        "python src/ml_detector.py "
-        "evaluate --dataset "
-        "datasets/eval_dataset_v2.csv",
+        f"python src/ml_detector.py "
+        f"evaluate --dataset "
+        f"datasets/eval_dataset_v2.csv --model {model_tag}",
 
-        "python src/guardrail_comparison.py "
-        "--dataset datasets/eval_dataset_v2.csv"
+        f"python src/guardrail_comparison.py "
+        f"--dataset datasets/eval_dataset_v2.csv "
+        f"--model-tag {model_tag}"
 
     ]
 
@@ -2095,7 +2162,7 @@ def main():
 
     with open(
 
-        OUTPUT_PATH,
+        output_path,
 
         "w",
 
@@ -2142,7 +2209,7 @@ def main():
 
     print(
 
-        OUTPUT_PATH
+        output_path
 
     )
 
@@ -2154,4 +2221,3 @@ def main():
 if __name__ == "__main__":
 
     main()
-

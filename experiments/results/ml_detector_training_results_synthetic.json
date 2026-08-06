@@ -1,0 +1,22 @@
+{
+    "timestamp": "2026-08-03T04:56:58.575900+00:00",
+    "dataset_type": "synthetic",
+    "model_tag": "synthetic",
+    "total_examples": 1000,
+    "training_examples": 800,
+    "testing_examples": 200,
+    "tfidf_vocabulary_size": 3617,
+    "accuracy": 0.99,
+    "precision": 1.0,
+    "recall": 0.98,
+    "f1": 0.98989898989899,
+    "false_positive_rate": 0.0,
+    "false_negative_rate": 0.02,
+    "threshold": 0.5,
+    "confusion_matrix": {
+        "true_negative": 100,
+        "false_positive": 0,
+        "false_negative": 2,
+        "true_positive": 98
+    }
+}

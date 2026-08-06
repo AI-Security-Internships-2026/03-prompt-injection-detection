@@ -1,0 +1,17 @@
+{
+    "timestamp": "2026-08-03T18:18:30.998329+00:00",
+    "label_a": "PIGuard raw",
+    "label_b": "HardenedGuard (Ours)",
+    "pred_path_a": "experiments\\results\\piguard_deepset.csv",
+    "pred_path_b": "experiments\\results\\ml_detector_eval_predictions_deepset.csv",
+    "n_samples_compared": 662,
+    "contingency_table": {
+        "both_correct": 469,
+        "a_correct_b_wrong": 154,
+        "b_correct_a_wrong": 11,
+        "both_wrong": 28
+    },
+    "statistic": 122.2060606060606,
+    "p_value": 2.0806591392988886e-28,
+    "significant_at_0_05": true
+}

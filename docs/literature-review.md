@@ -306,3 +306,223 @@ Use Google Scholar, IEEE Xplore, ACM DL, arXiv, or USENIX Security.
 | 8 | Llama Guard 3 | Meta AI | 2024 | LLM-based safety classifier | 14 harm categories | High |
 | 9 | AgentDojo | Debenedetti et al. | 2024 | Agentic injection benchmark | 629 security test cases | High |
 | 10 | JailbreakBench | Chao et al. | 2024 | Standardized jailbreak benchmark | 100 harmful behaviors | Medium |
+
+
+
+
+
+# Literature Review — Week 8
+
+## Topic: Multi-Turn Prompt Injection Persistence & KV-Cache/Context-State Mechanics
+
+**Student:** Ehsan Ullah Jamshaid
+**Updated:** Week 8 (Jul 27 – Aug 2, 2026)
+
+---
+
+## 1. Verification and Literature Review
+
+This Week 8 literature review focuses on three closely related areas:
+
+1. Multi-turn prompt injection persistence.
+2. Internal-signal-based prompt injection detection.
+3. KV-cache, prefix-caching, and context-state mechanics.
+
+The purpose is to understand what has already been studied, identify what remains unclear, and determine whether there is a research gap at the intersection of multi-turn prompt injection and KV-cache reuse.
+
+The literature reviewed this week was checked against primary or near-primary sources where possible. For the closest candidate papers, I verified the claims against the full paper or official publisher/documentation sources. Where only an abstract or snippet was available, I have explicitly noted that limitation.
+
+---
+
+## 2. Important Correction to Earlier Literature Review
+
+In an earlier Week 8 draft, I stated that the Gemini report extended Attention Tracker-style internal-activation defenses to more complex multi-turn scenarios. After reviewing the full paper, I found that this statement was overstated and have corrected it here.
+
+The Gemini report (arXiv:2505.14534) discusses conversation histories of up to 10 turns as background context, but the actual attack and evaluation setting is single-turn. The paper states that the evaluated attacks involve an attacker attempting to induce the model to make a single additional function call.
+
+The Attention Tracker-style defense is also evaluated only as a limited investigation on Gemma-2-9B-IT and is not presented as a central multi-turn extension of the defense.
+
+I also found no discussion of KV-cache mechanics, cache reuse, or cached state persisting independently of the visible prompt in the Gemini report.
+
+Therefore, I consider this paper useful background on the severity of indirect prompt injection, but I do not consider it direct prior work on the specific KV-cache persistence question investigated in this project.
+
+**Verification:** Full paper PDF, arXiv:2505.14534.
+
+---
+
+## 3. AgentSentry — Re-verification
+
+AgentSentry (arXiv:2602.22724) is one of the closest papers I found to the multi-turn aspect of this research.
+
+The paper describes a form of temporal causal takeover in which an injected instruction enters the context at one point and becomes actionable at a later stage, such as a tool-return boundary. This makes it relevant to the general pattern of an injection introduced at one point in a conversation influencing behavior at a later point.
+
+However, AgentSentry does not investigate KV-cache persistence.
+
+Its causal diagnostics work through counterfactual re-execution. The system re-runs the agent with modified or sanitized inputs and compares the resulting behavior. The paper is designed for black-box settings and does not rely on access to model parameters, internal activations, or cached KV states.
+
+Therefore, AgentSentry detects whether removing or modifying injected content changes the model's behavior by explicitly constructing another input and executing it again. It does not investigate whether a serving backend's natural KV-cache reuse can allow previously processed injected content to continue influencing a later response after the visible content has been edited or removed.
+
+This distinction is important for the research gap considered in this project.
+
+**Verification:** Full paper PDF, arXiv:2602.22724.
+
+---
+
+## 4. Attention Tracker
+
+Attention Tracker is a training-free prompt injection detection method that uses attention patterns to identify the distraction effect caused by injected instructions.
+
+The method tracks changes in attention entropy and KL-divergence in important attention heads. Unlike a text-only scanner, it relies on internal attention information and therefore requires white-box access to attention scores.
+
+Based on the source reviewed, the method is presented within a single forward-pass setting. I did not identify a direct discussion of multi-turn KV-cache persistence in the available material reviewed this week.
+
+The full paper should be reviewed before making stronger claims about its methodology or limitations.
+
+**Verification:** ACL Anthology official publication page, NAACL Findings 2025. Full-paper verification remains pending.
+
+---
+
+## 5. PROMPTPEEK — KV-Cache Sharing
+
+PROMPTPEEK, titled *"I Know What You Asked: Prompt Leakage via KV-Cache Sharing in Multi-Tenant LLM Serving,"* studies security risks caused by KV-cache sharing between different users in multi-tenant LLM serving systems.
+
+The attack exploits cache-sharing behavior in systems such as SGLang and vLLM and uses timing side channels to reconstruct information about another user's prompt.
+
+The reported results demonstrate that cache state can be externally distinguishable through timing behavior.
+
+However, this is fundamentally a cross-user confidentiality problem. It does not investigate whether a user's own earlier conversation turn can remain behaviorally influential through cached state after that content has been removed or edited from the visible context of a later turn.
+
+Therefore, PROMPTPEEK is relevant to this project because it demonstrates that KV-cache behavior can be externally observable, but it does not directly address same-session behavioral persistence.
+
+**Verification:** Cross-checked using the official NDSS 2025 symposium information and available bibliographic/technical sources. Full paper verification remains recommended before making detailed methodological claims.
+
+---
+
+## 6. PrefixWall
+
+PrefixWall appears to focus on mitigating prefix-caching side channels across LLM serving backends, including systems such as vLLM and SGLang.
+
+This work is relevant as background for understanding the security implications of Automatic Prefix Caching and how cache behavior can potentially be observed or exploited.
+
+However, I have not yet completed a full verification of the paper. Therefore, I consider this citation provisional and will review the full paper before relying on it for detailed claims in the final research proposal.
+
+**Verification status:** Provisional. Full paper review pending.
+
+---
+
+## 7. vLLM Prefix Caching and Security
+
+I reviewed the official vLLM documentation and the official vLLM security advisory related to prefix-cache side channels.
+
+The vLLM security advisory (GHSA-4qjh-9fv9-r85r) confirms that differences in Time-To-First-Token (TTFT) can reveal whether a prefix-cache hit or miss occurred.
+
+vLLM also provides a `cache_salt` mechanism that can be included in requests. The salt is incorporated into the cache-key calculation, allowing cache reuse to be controlled between requests.
+
+This is potentially useful for the experimental design because it provides a way to compare cache-reused and cache-isolated conditions.
+
+vLLM also exposes Prometheus-compatible metrics, including prefix-cache queries and hits, allowing cache behavior to be monitored through documented metrics.
+
+However, these metrics provide aggregate information about cache usage and hit/miss behavior. I did not find evidence that the standard vLLM API or metrics interface exposes the actual cached KV tensor values.
+
+Therefore, if the experiment requires literal inspection of KV tensors, additional instrumentation or a lower-level framework may be required.
+
+**Verification:** Official vLLM documentation and official vLLM GitHub Security Advisory.
+
+---
+
+# 8. What Is Already Known
+
+Based on the literature reviewed this week, the following points appear to be established:
+
+* Multi-turn prompt injection persistence through visible conversation history is already documented in existing work such as Dialog Poisoning, ChatInject, and AgentSentry.
+* In these cases, injected instructions can continue to influence later behavior because the malicious content remains part of the context provided to the model.
+* Internal-signal approaches, including attention-based and hidden-state-based methods, can provide information about prompt injection beyond simple surface-text scanning.
+* KV-cache behavior can be externally distinguishable through mechanisms such as timing differences and documented cache hit/miss metrics.
+* Existing KV-cache security research primarily focuses on cross-user information leakage and side-channel attacks.
+* AgentSentry addresses multi-turn prompt injection using black-box counterfactual re-execution rather than direct access to cache state or internal model state.
+
+---
+
+# 9. What Remains Unclear
+
+Based on the literature reviewed so far, I did not identify evidence that directly answers the following questions:
+
+* Can cached computation from an earlier injected interaction continue to influence a model's behavior after that injected content has been edited, contradicted, or removed from the visible context of a later request?
+* Can this influence occur within the same user's conversation when the later visible prompt appears clean?
+* Can such influence be detected without relying only on scanning the visible conversation text?
+* Can cache hit/miss behavior or other cache-related signals provide a useful detection signal for this type of persistence?
+
+I also have not yet established whether vLLM's standard serving interface provides sufficient control and observability for directly testing this hypothesis. This needs to be validated experimentally rather than assumed from the documentation.
+
+---
+
+# 10. Research Gap
+
+The literature reviewed this week suggests that three related areas have largely been studied separately:
+
+1. **Multi-turn prompt injection research** generally assumes that the injected content remains present in the visible conversation history.
+2. **Internal-signal detection research** focuses on signals such as attention patterns or hidden states during model processing.
+3. **KV-cache security research** primarily studies cache sharing, side channels, and cross-user information leakage.
+
+The specific intersection investigated in this project is:
+
+> An injection is introduced at turn N. By turn N+k, the injected content has been removed, edited, or contradicted in the visible conversation context. However, the inference backend may reuse cached state created while processing the earlier interaction. The research question is whether this cached state can still measurably influence the model's output at turn N+k and whether this influence can be detected independently of scanning the visible text.
+
+Based on the literature reviewed so far, I did not identify a paper that directly studies this complete scenario.
+
+This differs from ordinary multi-turn prompt injection persistence because the proposed threat model specifically considers a case where the visible prompt at turn N+k appears clean and a text-based scanner may therefore find nothing suspicious.
+
+### Research Gap Statement
+
+> **If an injection is introduced at turn N and later contradicted, edited, or removed from the visible conversation by turn N+k, but the inference backend reuses KV-cache state created while processing the earlier turn, does that cached state still measurably influence the model's output at turn N+k — and if so, can this influence be detected independently of scanning the visible text?**
+
+This should currently be treated as a **working research-gap hypothesis**, rather than a definitive claim of novelty. The literature search is not exhaustive and will need to be revisited as the project progresses.
+
+---
+
+# 11. Limitations of the Literature Review
+
+This literature review was conducted during Week 8 using targeted searches across multi-turn prompt injection, internal-signal detection, and KV-cache security.
+
+The search is not exhaustive, and it is possible that relevant work exists that was not identified through the search terms or sources used.
+
+Some papers, including PrefixWall and Attention Tracker, have not yet been reviewed in full. Their relevance and relationship to the proposed research may therefore change after complete verification.
+
+In addition, unpublished industry research or internal investigations are not necessarily publicly available, so the absence of a paper in this review should not be interpreted as proof that the research question has never been investigated.
+
+Therefore, statements such as "no paper was found" should be understood as referring to the literature identified and reviewed so far.
+
+---
+
+# 12. Week 9 Readiness
+
+### Completed in Week 8
+
+* Reviewed literature across multi-turn prompt injection persistence, internal-signal detection, and KV-cache security.
+* Re-verified the closest candidate papers, particularly AgentSentry and the Gemini report.
+* Corrected an overstated claim from an earlier draft regarding the Gemini report.
+* Identified the distinction between visible-history persistence and potential cache-level persistence.
+* Confirmed that vLLM provides documented prefix-caching functionality and cache-related observability.
+* Identified vLLM as a suitable initial backend candidate, subject to environment validation.
+
+### Remaining Questions for Week 9
+
+* Is the available GPU environment sufficient for running vLLM experiments?
+* Can `cache_salt` reliably control cache reuse for the planned experimental setup?
+* Can cache-reused and cache-cold runs be compared while keeping the visible final context equivalent?
+* Are aggregate cache metrics and output/log-probability comparisons sufficient to test the hypothesis?
+* Is direct KV-cache tensor inspection actually necessary?
+* Do PrefixWall and other closely related works contain experimental methods or tools that can be reused?
+
+### Recommended Week 9 Direction
+
+The first experiment should focus on comparing two conditions with the same visible final context:
+
+1. A conversation where the earlier turn contained an injection and the later request reuses relevant cached computation.
+2. A conversation reconstructed from a clean or sanitized history where the corresponding cached computation was never created from the injected content.
+
+The primary question is whether the model's output or other measurable behavior differs between these conditions despite the visible context at turn N+k being equivalent.
+
+This provides a relatively low-cost initial test of the hypothesis before attempting more invasive cache instrumentation or direct KV-tensor inspection.
+
+The Week 9 threat model should therefore define persistence operationally around **measurable behavioral divergence between cache-reused and cache-cold conditions with equivalent visible context**.
