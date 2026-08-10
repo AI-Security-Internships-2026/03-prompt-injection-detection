@@ -1,0 +1,14 @@
+import requests, time, statistics, csv, uuid
+
+URL = "http://localhost:8000/v1/completions"
+MODEL = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+N_TRIALS = 100
+
+BASE = "In a distant kingdom long ago, th
+    return time.perf_counter() - t0
+
+def make_variant(divergence_frac):
+    words = BASE.split()
+    cut = int(len(words) * divergence_frac)
+    prefix = " ".join(words[:cut])
+    # unique suffix every cal
