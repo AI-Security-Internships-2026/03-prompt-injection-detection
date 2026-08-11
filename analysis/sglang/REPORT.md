@@ -1,6 +1,5 @@
-# SGLang Cross-Tenant KV/Prefix-Cache Experiment — Session Report
+# SGLang Cross-Tenant KV/Prefix-Cache Experiment — Report
 
-**Date:** 2026-08-11
 **Model:** deepseek-ai/DeepSeek-R1-Distill-Llama-8B
 **SGLang version:** 0.5.17
 **Hardware:** NVIDIA GB10 (DGX Spark), CUDA 13.0, sm_121
@@ -11,76 +10,91 @@ information leakage through shared prefix-cache behavior, and how does this
 compare to prior vLLM findings (Phase 2 d≈39.7, Phase 3 d≈0.831)?
 
 ## Stage 1 — Installation
-Clean pip install in isolated conda env (`sglang-exp`), no source-build
-failures. One minor non-blocking pip-check warning (`nvidia-cusparselt-cu13`
-platform tag). CUDA kernels JIT-compiled on first run (~3-4 min), cached
-thereafter.
+Clean pip install in isolated conda env (`sglang-exp`). CUDA kernels JIT-compiled
+on first run, cached thereafter. No source-build failures.
 
 ## Stage 2 — Single-Tenant Validation
 
-**Short prefix (~78 tokens):**
-- fresh_warm vs repeat: Cohen's d=0.8394, p=0.0062 (significant)
-- repeat vs modified: Cohen's d=-0.0155, p=0.970 (no signal)
+**Short prefix (~78 tokens):** fresh_warm vs repeat d=0.8394, p=0.0062 (significant).
+repeat vs modified d=-0.0155, p=0.970 (no signal — later diagnosed as a design
+flaw, not a true negative; see Stage 2c below).
 
-**Long prefix (~1212 tokens):**
-- Cold-start latency scaled correctly with prefix length (0.425s vs 0.236s)
-- repeat vs modified: Cohen's d=0.4567, p=0.345 (not significant; modified
-  suffix only diverged by ~1 cached token out of 1211 - insufficient
-  divergence, confounds this specific test)
+**Long prefix (~1212 tokens):** cold-start latency scaled correctly with prefix
+length. repeat vs modified d=0.4567, p=0.345 (not significant — same design
+flaw, modified suffix diverged by only ~1 cached token out of 1211).
 
-**Conclusion:** Cold-vs-warm cache state produces a clear, significant timing
-signal. Degree-of-partial-match has NOT yet produced a resolvable signal in
-either prompt length tested — this requires a better-designed ablation
-(larger, controlled suffix divergence) in a future session.
+**Stage 2c — corrected partial-cache-hit test (this session):**
+Root cause of the earlier null results: insufficient divergence between
+"repeat" and "modified" conditions. Redesigned with substantial suffix
+divergence (~265/310 vs 299/300 cached tokens) and controlled for scheduler
+contention (see Stage 3 gap finding below) via a 1s idle gap.
+
+Four design iterations were needed to get a valid test (documented in commit
+history for transparency — v1 self-primed, v2 accidentally equalized both
+conditions, v3 lacked the contention control, v4 is the valid result):
+
+- repeat: mean=0.083s, cached_tokens=299/300 (n=10, consistent)
+- modified: mean=0.088s, cached_tokens=265/310 (n=10, consistent)
+- Cohen's d=-0.7342, Mann-Whitney p=0.0173 (significant)
+- Robust to outlier removal: d=-0.7014, p=0.0305
+
+**Conclusion:** Partial cache match DOES produce a statistically significant
+timing signal on SGLang, when divergence is substantial and contention is
+controlled. The original Stage 2 null results were a design artifact, not
+evidence of no signal.
 
 ## Stage 3 — Cross-Tenant Timing Leakage
 
-### Design note: confound found and fixed
-Initial version (v1) had attacker probes self-priming the shared cache across
-repeated trials within Condition A, making Condition A and B indistinguishable
-(both saturated near-full cache hit). Fixed in v2 by flushing the cache
-(`/flush_cache`) before every individual trial, isolating each measurement.
+### v1 → v2: confound found and fixed
+v1 had attacker probes self-priming the cache across trials, making Condition
+A and B indistinguishable. Fixed in v2 via per-trial `/flush_cache`.
 
-### Result (v2, flush-isolated, n=15 per condition)
+### v2 Result — cache-hit field leakage (n=15 per condition)
+- Condition A (no victim activity): cached_tokens=0/188, all 15 trials
+- Condition B (after victim activity): cached_tokens=181/188, all 15 trials
+- **100% deterministic, binary signal.** Attacker access to `meta_info.cached_tokens`
+  trivially reveals recent cross-tenant cache activity.
 
-**Cache-hit leakage (via `meta_info.cached_tokens`):**
-- Condition A (no victim activity): cached_tokens = 0/188, all 15 trials
-- Condition B (after victim activity): cached_tokens = 181/188, all 15 trials
-- **100% separable, deterministic signal.** An attacker with access to this
-  field can trivially detect that another tenant recently used an
-  overlapping prefix.
+### v2 wall-clock anomaly, and its resolution (this session)
+v2 showed B slower than A (d=-8.42, p=3.4e-6) — opposite of naive cache-speedup
+expectation. Investigated via an idle-gap sweep (0s/1s/3s/5s) between victim
+activity and attacker probe:
 
-**Wall-clock latency:**
-- A: mean=0.09637s, std=0.00420s
-- B: mean=0.14278s, std=0.00657s
-- Cohen's d = -8.4198, Mann-Whitney p = 3.39e-6 (highly significant)
+| Gap | A mean | B mean | Direction |
+|---|---|---|---|
+| 0s | 0.124s | 0.144s | B > A (anomaly) |
+| 1s | 0.103s | 0.083s | B < A (expected) |
+| 3s | 0.099s | 0.082s | B < A (expected) |
+| 5s | 0.097s | 0.081s | B < A (expected) |
 
-### Open question — direction anomaly
-Latency is HIGHER in Condition B (post-victim, high cache hit) than Condition A
-(cold), which is the opposite of a naive cache-speedup model. The effect size
-is large and fully consistent across all 15 trials, so this is not noise.
-Leading hypothesis (NOT YET VERIFIED): back-to-back request scheduling/queueing
-overhead when the victim's request and attacker's probe hit the server in close
-succession, possibly dominating over prefill-compute savings from caching.
-This needs isolation (e.g., inserting a controlled idle gap between victim and
-attacker requests) before drawing conclusions about the mechanism.
+All non-zero gaps: d≈3.4–4.0, p≈0.0002 (highly significant, consistent direction).
+
+**Conclusion:** The v2 anomaly was caused by request-scheduling contention from
+back-to-back requests, not a property of the cache mechanism. With even 1s
+separation, latency behaves as a naive cache-hit model predicts. This fully
+resolves the previously open question.
 
 ## Comparison to vLLM Results
 | Experiment | vLLM | SGLang |
 |---|---|---|
-| Phase 2 (cache-related timing) | d≈39.7, p≈2.26e-259 | d=0.839 (short prefix, fresh vs repeat) |
-| Phase 3 (cross-tenant timing) | d≈0.831, p<0.00001 | d=-8.42, p=3.39e-6 (direction differs - see above) |
-| Cache-hit field leakage | Not tested in vLLM Phase 2/3/4 | 100% deterministic (novel to this stage) |
+| Cache-related timing (cold vs warm) | d≈39.7, p≈2.26e-259 | d=0.839 (short prefix) |
+| Cross-tenant timing (contention-controlled) | d≈0.831, p<0.00001 | d≈3.4–4.0, p≈0.0002 (gap≥1s) |
+| Cache-hit field leakage | Not tested | 100% deterministic (novel to SGLang stage) |
+| Partial-match timing | Not cleanly established (Phase 4 negative result) | d=-0.73, p=0.017 (confirmed, contention-controlled) |
 
-Direct magnitude comparison between vLLM Phase 3 and SGLang cross-tenant d
-should be treated cautiously — different measurement design (SGLang v2 is
-flush-isolated per-trial; vLLM Phase 3 methodology should be re-checked for
-equivalent isolation before treating these as comparable numbers).
+Note: vLLM Phase 3/4 methodology should be re-checked for equivalent request-spacing
+controls before treating magnitude comparisons as fully apples-to-apples — the
+SGLang contention finding suggests request timing/spacing is a variable that
+matters and may not have been controlled identically across the two codebases.
 
 ## Status / Next Steps
-- Ablations (prefix length, secret position, repetition count): not started
-- Information-recovery stage: not started (correctly deferred - no reliable
-  oracle characterized yet per Section 14 requirement)
-- Priority for next session: (1) isolate the latency-direction anomaly,
-  (2) redesign modified-prefix test with larger controlled divergence,
-  (3) begin ablations only after (1) and (2) are resolved
+- ✅ Cross-tenant leakage: confirmed via two independent signals (cache-hit field,
+  contention-controlled timing)
+- ✅ Latency-direction anomaly: resolved (scheduler contention)
+- ✅ Partial-match timing signal: confirmed (contention-controlled)
+- ⬜ Ablations (prefix length sweep, secret position, repetition count trade-off):
+  not started
+- ⬜ Information-recovery stage: correctly still deferred — a reliable oracle now
+  exists (this stage's findings), so this is unblocked for a future session
+- ⬜ Full vLLM methodology audit for request-spacing equivalence: recommended
+  before final cross-framework comparison numbers are reported
