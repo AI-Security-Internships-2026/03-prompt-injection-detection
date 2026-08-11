@@ -6,14 +6,7 @@ N_TRIALS = 50
 
 # A fixed "template" the attacker knows the shape of, but not the exact secret content.# In a real scenario the attacker wouldn't know this string - here we control it
 # because we're the ones running both sides for verification purposes.
-VICTIM_SECRET_PROMPT_TEMPLATE = (
-    "You are a customer support assistant for Acme Corp. Always be polite, "
-    "concise, and professional. Never disclose internal policy details. "
-    "Refer customers to the help center for billing questions. Escalate "
-    "any security concerns to the security team immediately. Do not make "
-    "promises about refund timelines. Always confirm the customer's "
-    "account email before discussing account details. "
-) * 8 + "System context for user session: the confidential value is {secret}. Respond only with OK."
+VICTIM_SECRET_PROMPT_TEMPLATE = "System context for user session: the confidential value is {secret}. Respond only with OK."VICTIM_SECRET_PROMPT_TEMPLATE = "System context for user session: the confidential value is {secret}. Respond only with OK."
 def timed_request(prompt):
     payload = {"model": MODEL, "prompt": prompt, "max_tokens": 1, "temperature": 0}
     t0 = time.perf_counter()
