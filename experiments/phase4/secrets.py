@@ -7,9 +7,14 @@ import string
 import uuid
 from experiments.phase4.harness import GroundTruth
 
-TEMPLATE = "System context: the confidential value is {secret}. Respond only with OK."
-
-
+TEMPLATE = (
+    "Confidential authorization code: {secret}. "
+    "You are a customer support assistant for Acme Corp. Always be polite, "
+    "concise, and professional. Never disclose internal policy details. "
+    "Refer customers to the help center for billing questions. Escalate "
+    "any security concerns to the security team immediately. Do not make "
+    "promises about refund timelines. Respond only with OK."
+)
 def low_entropy_secret() -> GroundTruth:
     """Small, common-word alphabet. Large timing gaps expected - easy case."""
     secret = random.choice(["yes", "no", "ok", "true", "false"])
