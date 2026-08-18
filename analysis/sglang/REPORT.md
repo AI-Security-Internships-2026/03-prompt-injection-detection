@@ -98,3 +98,55 @@ matters and may not have been controlled identically across the two codebases.
   exists (this stage's findings), so this is unblocked for a future session
 - ⬜ Full vLLM methodology audit for request-spacing equivalence: recommended
   before final cross-framework comparison numbers are reported
+
+## Level 2 — Candidate Identification (COMPLETE)
+
+Tested whether an attacker can identify which of 4 victim-selected
+synthetic candidates was used, via cache-observation oracle alone,
+across all four Section 13 entropy categories. Isolated-probe
+methodology: each probe gets its own flush -> victim_populate -> gap
+-> single probe cycle, eliminating cross-probe cache contamination
+(see note below).
+
+| Category            | N trials | Accuracy | 95% Wilson CI      | p-value (vs 25% chance) |
+|----------------------|----------|----------|---------------------|--------------------------|
+| Low-entropy          | 30       | 100%     | [88.65%, 100.00%]   | 8.67e-19                 |
+| Predictable-prefix   | 30       | 100%     | [88.65%, 100.00%]   | 8.67e-19                 |
+| Structured (PIN)     | 30       | 100%     | [88.65%, 100.00%]   | 8.67e-19                 |
+| High-entropy (UUID)  | 30       | 100%     | [88.65%, 100.00%]   | 8.67e-19                 |
+
+All confusion matrices fully diagonal (zero misclassifications), all
+120-row raw data in results/sglang/candidate_recovery_*_isolated.csv.
+
+### Methodological notes
+
+1. **Cross-probe contamination (caught and fixed).** The first
+   predictable-prefix run (non-isolated, `run_candidate_recovery_prefix.py`)
+   showed order-dependent `cached_tokens` drift among non-matching probes
+   (179/180/181 instead of flat), traced to attacker probes populating
+   cache for each other within a trial. Fixed by giving each probe its
+   own flush/victim/gap cycle. Result direction did not change, but the
+   isolated version is the methodologically sound one and is what is
+   reported above.
+
+2. **Tokenization is not length-invariant.** The high-entropy (UUID-like)
+   candidates were all 36 characters but tokenized to different
+   `prompt_tokens` counts (206, 208, 209) depending on exact hex content.
+   Token-count assumptions should not be made from character length alone
+   in future experiment design (relevant for Level 3 per-position work).
+
+3. **Signal magnitude varies by category.** Predictable-prefix and PIN
+   categories showed a +1 cached_tokens separation between match/non-match.
+   UUID category showed a full prompt_tokens-1 separation (much larger
+   gap). This suggests separation magnitude scales with how much of the
+   candidate is genuinely unique post-divergence, not just candidate-set
+   size.
+
+### Conclusion
+
+Cache-state observations reliably distinguish which of 4 same-entropy-
+category candidates a victim tenant used, across all tested categories,
+with isolated-probe methodology ruling out the ordering confound.  This
+confirms Level 2 of the research progression. It does not yet establish
+whether components of a single high-entropy secret (not drawn from a
+small closed candidate set) can be inferred — that is Level 3.
