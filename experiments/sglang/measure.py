@@ -9,7 +9,7 @@ import requests
 
 SGLANG_URL = "http://localhost:30000/generate"
 
-def send_request(prompt: str, max_new_tokens: int = 1, temperature: float = 0.0, timeout: float = 60.0) -> dict:
+def send_request(prompt: str, max_new_tokens: int = 1, temperature: float = 0.0, timeout: float = 60.0, cache_salt: str = None) -> dict:
     """
     Sends a single non-streaming request to SGLang and records wall-clock latency.
     Returns a flat dict suitable for writing to CSV.
@@ -21,6 +21,8 @@ def send_request(prompt: str, max_new_tokens: int = 1, temperature: float = 0.0,
             "temperature": temperature,
         },
     }
+    if cache_salt is not None:
+        payload["extra_key"] = cache_salt
 
     t0 = time.perf_counter()
     resp = requests.post(SGLANG_URL, json=payload, timeout=timeout)

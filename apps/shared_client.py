@@ -10,11 +10,13 @@ import requests
 SGLANG_GENERATE_URL = "http://localhost:30000/generate"
 SGLANG_FLUSH_URL = "http://localhost:30000/flush_cache"
 
-def send_to_sglang(prompt: str, max_new_tokens: int = 1, temperature: float = 0.0, timeout: float = 60.0) -> dict:
+def send_to_sglang(prompt: str, max_new_tokens: int = 1, temperature: float = 0.0, timeout: float = 60.0, cache_salt: str = None) -> dict:
     payload = {
         "text": prompt,
         "sampling_params": {"max_new_tokens": max_new_tokens, "temperature": temperature},
     }
+    if cache_salt is not None:
+        payload["extra_key"] = cache_salt
     t0 = time.perf_counter()
     resp = requests.post(SGLANG_GENERATE_URL, json=payload, timeout=timeout)
     t1 = time.perf_counter()
@@ -34,4 +36,5 @@ def send_to_sglang(prompt: str, max_new_tokens: int = 1, temperature: float = 0.
 
 def flush_cache() -> str:
     r = requests.post(SGLANG_FLUSH_URL, timeout=10)
+    r.raise_for_status()
     return r.text.strip()

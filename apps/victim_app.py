@@ -1,7 +1,6 @@
 """
 victim_app.py — "Finance Assistant" (Tenant A / User A)
-Port 8001. Simple synthetic session auth. Secret lives only in this
-process's memory, keyed by session token. Never returned by any endpoint.
+Port 8001. Secret lives only in this process's memory, keyed by session.
 """
 import sys, os, secrets
 sys.path.insert(0, os.path.dirname(__file__))
@@ -11,20 +10,9 @@ from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
 from typing import Optional
 from shared_client import send_to_sglang, flush_cache
-import sys as _sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "experiments", "sglang"))
 from config import PIN_LABEL, PIN_SEPARATOR, PIN_TRAILING_MARKER
 
 app = FastAPI(title="Finance Assistant (User A)")
-
-def format_secret_for_cache(secret: str) -> str:
-    """If the secret looks like an all-digit PIN, format it using the
-    validated comma-separated + trailing-marker scheme (prevents BPE
-    token merging that breaks position-by-position cache detection).
-    Otherwise, send as-is."""
-    if secret.isdigit():
-        return PIN_LABEL + PIN_SEPARATOR.join(list(secret)) + PIN_TRAILING_MARKER
-    return secret
 
 SHARED_PUBLIC_PREFIX = (
     "You are a customer support assistant for a cloud infrastructure company. "
@@ -34,10 +22,14 @@ SHARED_PUBLIC_PREFIX = (
     "account-specific context for the current session: "
 ) * 3
 
-# Synthetic researcher-controlled credentials
 _VALID_USERS = {"user_a": "researcher-controlled-password"}
-_sessions = {}   # token -> username
-_secrets = {}    # token -> submitted secret (process-local only)
+_sessions = {}
+_secrets = {}
+
+def format_secret_for_cache(secret: str) -> str:
+    if secret.isdigit():
+        return PIN_LABEL + PIN_SEPARATOR.join(list(secret)) + PIN_TRAILING_MARKER
+    return secret
 
 class LoginRequest(BaseModel):
     username: str
@@ -67,11 +59,11 @@ def logout(authorization: Optional[str] = Header(None)):
 def submit_secret(req: SubmitRequest, authorization: Optional[str] = Header(None)):
     if authorization not in _sessions:
         raise HTTPException(status_code=401, detail="not logged in")
-    _secrets[authorization] = req.secret  # this session's memory only
+    _secrets[authorization] = req.secret
 
     formatted = format_secret_for_cache(req.secret)
     prompt = SHARED_PUBLIC_PREFIX + formatted
-    result = send_to_sglang(prompt)
+    result = send_to_sglang(prompt, cache_salt="tenant_victim")
     return {"accepted": True, "prompt_tokens": result["prompt_tokens"]}
 
 @app.post("/flush")
@@ -80,9 +72,7 @@ def flush():
 
 @app.get("/status")
 def status(authorization: Optional[str] = Header(None)):
-    logged_in = authorization in _sessions
-    has_secret = authorization in _secrets
-    return {"logged_in": logged_in, "secret_submitted": has_secret}
+    return {"logged_in": authorization in _sessions, "secret_submitted": authorization in _secrets}
 
 from fastapi.responses import HTMLResponse
 
@@ -104,14 +94,13 @@ def victim_ui():
       label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; margin-top: 16px; }
       label:first-child { margin-top: 0; }
       input { width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px;
-              font-size: 14px; outline: none; transition: border-color 0.15s; }
+              font-size: 14px; outline: none; }
       input:focus { border-color: #1e40af; }
       button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
-               cursor: pointer; margin-top: 20px; transition: opacity 0.15s; }
+               cursor: pointer; margin-top: 20px; }
       .btn-primary { background: #1e40af; color: #fff; }
-      .btn-primary:hover { opacity: 0.9; }
+      .btn-flush { background: #f97316; color: #fff; margin-top: 10px; }
       .btn-secondary { background: #f1f5f9; color: #475569; margin-top: 10px; }
-      .btn-secondary:hover { background: #e2e8f0; }
       .status-bar { display: flex; align-items: center; gap: 8px; background: #f0fdf4; border: 1px solid #bbf7d0;
                     border-radius: 8px; padding: 10px 14px; margin-bottom: 20px; font-size: 13px; color: #166534; }
       .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
@@ -134,10 +123,10 @@ def victim_ui():
         </div>
         <div id="app" style="display:none;">
           <div class="status-bar"><span class="dot"></span> Signed in as user_a</div>
+          <button class="btn-flush" onclick="flushCache()">1. Flush cache first</button>
           <label>Account PIN</label>
           <input id="pin" placeholder="e.g. 482913" maxlength="6">
-          <div class="hint">Synthetic research data only</div>
-          <button class="btn-primary" onclick="submitPin()">Submit PIN</button>
+          <button class="btn-primary" onclick="submitPin()">2. Submit PIN</button>
           <button class="btn-secondary" onclick="logout()">Sign out</button>
           <div class="msg" id="msg"></div>
         </div>
@@ -154,11 +143,15 @@ def victim_ui():
         document.getElementById('app').style.display = 'block';
       } else { alert('Login failed'); }
     }
+    async function flushCache() {
+      await fetch('/flush', {method:'POST'});
+      document.getElementById('msg').innerText = 'Cache flushed. Now submit the PIN.';
+    }
     async function submitPin() {
       const r = await fetch('/submit', {method:'POST', headers:{'Content-Type':'application/json','Authorization':token},
         body: JSON.stringify({secret: document.getElementById('pin').value})});
-      const d = await r.json();
-      document.getElementById('msg').innerText = 'Submitted successfully.';
+      await r.json();
+      document.getElementById('msg').innerText = 'Submitted. Now go to the attacker app and click Detect PIN once.';
     }
     async function logout() {
       await fetch('/logout', {method:'POST', headers:{'Authorization':token}});
