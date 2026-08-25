@@ -164,6 +164,27 @@ request) full recovery finishes. Per-trial data in
    position are equal-length by construction (fixed `PIN_LENGTH`, fixed
    placeholder padding, fixed label/marker).
 
+6. **Pandas dtype upcasting silently corrupted prompt reconstruction
+   (caught via manual inspection of pasted CSV rows in an interactive
+   testbed, initially misdiagnosed as a corrupted PIN_TRAILING_MARKER
+   character in the real attack data)**: `known_prefix_so_far` is NaN at
+   `position=1` for every trial, which forces pandas to read the entire
+   column as `float64`. Recovered digit strings like `"0"` or `"4"`
+   therefore became floats `0.0` / `4.0`, and naive `str()` conversion
+   produced `"0.0"` (3 characters, including a stray `.`) instead of
+   `"0"` (1 character). This shifted the guess digit's position within
+   the reconstructed prompt for every row at `position >= 2` (5 of 6 PIN
+   positions per trial - the large majority of the dataset), and the
+   stray `.` was initially mistaken for `PIN_TRAILING_MARKER` during
+   manual review. Confirmed via direct inspection that the underlying CSV
+   data and the original attack run were correct - the bug was isolated
+   to this script's own reconstruction logic. Fixed via explicit
+   NaN-aware, float-aware string conversion (`_safe_prefix_str`) before
+   prompt reconstruction. All threshold-sweep and detection-latency
+   results in this report were regenerated after this fix; see git
+   history for the pre-fix numbers if a before/after comparison is
+   needed.
+
 ### Limitations
 
 - Detector was validated against `pin_chained_recovery.csv`

@@ -116,15 +116,33 @@ PIN_TRAILING_MARKER = "."
 PIN_LENGTH = 6
 PLACEHOLDER_DIGIT = "0"  # matches run_pin_chained_recovery.py
 
+def _safe_prefix_str(val):
+    """Fix pandas dtype bug: known_prefix_so_far has NaN at position=1,
+    which forces pandas to upcast the whole column to float64. A recovered
+    digit string like "0" or "4" becomes the float 0.0 / 4.0, and
+    str(0.0) == "0.0" - a 3-char string with a stray "." - not "0". This
+    silently shifted every guess digit 2 characters to the right for
+    position >= 2 rows (5 of 6 positions per trial) and inserted a fake
+    "." that was initially mistaken for PIN_TRAILING_MARKER during manual
+    inspection. Confirmed via direct pandas read showing known_prefix_so_far
+    as 0.0, 4.0 (floats), not corrupted strings - the bug is in reconstruction,
+    not in the original attack data or run_pin_chained_recovery.py."""
+    if pd.isna(val):
+        return ""
+    if isinstance(val, float):
+        return str(int(val))
+    return str(val)
+
 def _reconstruct_full_prompt(known_prefix, guess_digit):
     """Rebuild the EXACT prompt attacker_probe() sent, matching
     run_pin_chained_recovery.py's attacker_probe() construction. The CSV
     only logs known_prefix_so_far and guess_digit, not the full prompt
     text, so this must mirror the real construction exactly or LCP is
-    understated (this was the source of the position-1 recall gap)."""
-    known_prefix = "" if pd.isna(known_prefix) else str(known_prefix)
+    understated."""
+    known_prefix = _safe_prefix_str(known_prefix)
+    guess_digit = _safe_prefix_str(guess_digit)
     remaining = PIN_LENGTH - len(known_prefix) - 1
-    guess_digits = known_prefix + str(guess_digit) + PLACEHOLDER_DIGIT * remaining
+    guess_digits = known_prefix + guess_digit + PLACEHOLDER_DIGIT * remaining
     formatted = PIN_SEPARATOR.join(list(guess_digits))
     return SHARED_PUBLIC_PREFIX + PIN_LABEL + formatted + PIN_TRAILING_MARKER
 
