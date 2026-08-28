@@ -7,8 +7,8 @@ independently; neither imports from the other.
 import time
 import requests
 
-SGLANG_GENERATE_URL = "http://localhost:30000/generate"
-SGLANG_FLUSH_URL = "http://localhost:30000/flush_cache"
+SGLANG_GENERATE_URL = "http://localhost:30001/generate"
+SGLANG_FLUSH_URL = "http://localhost:30001/flush_cache"
 
 def send_to_sglang(prompt: str, max_new_tokens: int = 1, temperature: float = 0.0, timeout: float = 60.0, cache_salt: str = None) -> dict:
     payload = {

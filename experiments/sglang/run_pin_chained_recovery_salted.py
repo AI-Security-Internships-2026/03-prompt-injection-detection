@@ -29,7 +29,7 @@ from measure import send_request
 from config import SHARED_PUBLIC_PREFIX, PIN_LENGTH, PIN_LABEL, PIN_SEPARATOR, PIN_TRAILING_MARKER
 
 OUT_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "results", "sglang", "pin_chained_recovery_salted.csv"))
-FLUSH_URL = "http://localhost:30000/flush_cache"
+FLUSH_URL = "http://localhost:30001/flush_cache"
 N_TRIALS = 30
 GAP_SECONDS = 1
 PLACEHOLDER_DIGIT = "0"
