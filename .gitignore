@@ -1,3 +1,4 @@
+ HEAD
 # Python
 __pycache__/
 *.py[cod]
@@ -71,3 +72,9 @@ experiments/results/*.pdf
 
 datasets/train_split.csv
 datasets/test_split.csv
+
+__pycache__/
+*.pyc
+logs/*.log
+.ipynb_checkpoints/
+ dgx-bundle/main
