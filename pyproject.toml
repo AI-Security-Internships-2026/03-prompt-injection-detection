@@ -122,7 +122,26 @@ line-length = 100
 target-version = "py314"
 # Legacy intern scripts carry heavy optional deps and pre-existing style; they
 # are excluded from lint until separately refactored (documented in the audit).
-extend-exclude = ["src/guardrail_comparison.py", "src/explore_hackaprompt.py", "src/main.py"]
+extend-exclude = [
+    "src/guardrail_comparison.py",
+    "src/explore_hackaprompt.py",
+    "src/main.py",
+
+    # M0: preserved Week-11 KV/SGLang research artifacts.
+    # These files are retained byte-for-byte for research provenance and contain
+    # historical lint/format debt. Refactor and re-enable linting during KV work.
+    "analysis/phase4",
+    "analysis/sglang",
+    "apps",
+    "experiments/phase4",
+    "experiments/sglang",
+    "cross_tenant_test_long.py",
+    "cross_tenant_test_short.py",
+    "scripts/analyze_cross_tenant.py",
+    "scripts/analyze_timing.py",
+    "scripts/characterize_timing.py",
+    "scripts/smoke_test.py",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
