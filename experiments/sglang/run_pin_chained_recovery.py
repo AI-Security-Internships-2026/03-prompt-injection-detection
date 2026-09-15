@@ -22,14 +22,17 @@ import sys
 import os
 import time
 import random
+import argparse
 import requests
 
 sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from measure import send_request
 from config import SHARED_PUBLIC_PREFIX, PIN_LENGTH, PIN_LABEL, PIN_SEPARATOR, PIN_TRAILING_MARKER
+from apps.shared_client import resolve_salt, CACHE_MODES
 
 OUT_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "results", "sglang", "pin_chained_recovery.csv"))
-FLUSH_URL = "http://localhost:30000/flush_cache"
+FLUSH_URL = "http://localhost:30010/flush_cache"
 N_TRIALS = 30
 GAP_SECONDS = 1
 PLACEHOLDER_DIGIT = "0"
@@ -43,18 +46,20 @@ def format_pin(digits: str) -> str:
 def random_pin():
     return "".join(str(random.randint(0, 9)) for _ in range(PIN_LENGTH))
 
-def victim_populate(pin_digits: str):
+def victim_populate(pin_digits: str, cache_mode, run_id):
     prompt = SHARED_PUBLIC_PREFIX + PIN_LABEL + format_pin(pin_digits) + PIN_TRAILING_MARKER
-    return send_request(prompt)
+    salt = resolve_salt(cache_mode, "victim", run_id)
+    return send_request(prompt, cache_salt=salt)
 
-def attacker_probe(known_prefix_digits: str, guess_digit: str):
+def attacker_probe(known_prefix_digits: str, guess_digit: str, cache_mode, run_id):
     # known_prefix_digits = attacker's own recovered digits so far (NOT ground truth)
     remaining = PIN_LENGTH - len(known_prefix_digits) - 1
     guess_digits = known_prefix_digits + guess_digit + PLACEHOLDER_DIGIT * remaining
     prompt = SHARED_PUBLIC_PREFIX + PIN_LABEL + format_pin(guess_digits) + PIN_TRAILING_MARKER
-    return send_request(prompt)
+    salt = resolve_salt(cache_mode, "attacker", run_id)
+    return send_request(prompt, cache_salt=salt)
 
-def recover_pin(gt_pin: str, trial: int, rows: list):
+def recover_pin(gt_pin: str, trial: int, rows: list, cache_mode, run_id):
     """Attacker-side recovery loop. Only ever sees its own recovered digits."""
     recovered = ""
     for position in range(PIN_LENGTH):
@@ -65,10 +70,10 @@ def recover_pin(gt_pin: str, trial: int, rows: list):
             flush_cache()
             time.sleep(0.3)
 
-            victim_populate(gt_pin)  # victim re-populates fresh cache each probe (isolated methodology)
+            victim_populate(gt_pin, cache_mode, run_id)  # victim re-populates fresh cache each probe (isolated methodology)
             time.sleep(GAP_SECONDS)
 
-            r = attacker_probe(recovered, guess)
+            r = attacker_probe(recovered, guess, cache_mode, run_id)
             r.update({
                 "trial": trial,
                 "position": position + 1,
@@ -93,14 +98,14 @@ def recover_pin(gt_pin: str, trial: int, rows: list):
 
     return recovered
 
-def run():
+def run(cache_mode, run_id):
     rows = []
     full_pin_correct = 0
 
     for trial in range(N_TRIALS):
         gt_pin = random_pin()
         print(f"=== trial {trial} (ground truth hidden from attacker logic) ===")
-        recovered_pin = recover_pin(gt_pin, trial, rows)
+        recovered_pin = recover_pin(gt_pin, trial, rows, cache_mode, run_id)
         is_full_match = recovered_pin == gt_pin
         full_pin_correct += is_full_match
         print(f"  --> recovered={recovered_pin} actual={gt_pin} {'FULL MATCH' if is_full_match else 'MISMATCH'}\n")
@@ -116,4 +121,17 @@ def run():
     print(f"Full-PIN reconstruction accuracy: {full_pin_correct}/{N_TRIALS} = {full_pin_correct/N_TRIALS:.2%}")
 
 if __name__ == "__main__":
-    run()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--out", default=None, help="Override OUT_PATH for chained-recovery CSV")
+    parser.add_argument("--trials", type=int, default=None, help="Override N_TRIALS (pilot use only — real run must use 30)")
+    parser.add_argument("--cache-mode", choices=sorted(CACHE_MODES), required=True, help="shared | tenant-isolated | cache-disabled")
+    parser.add_argument("--run-id", default=None, help="Salt disambiguator for tenant-isolated mode")
+    args = parser.parse_args()
+
+    if args.out:
+        OUT_PATH = os.path.abspath(args.out)
+    if args.trials:
+        N_TRIALS = args.trials
+
+    run_id = args.run_id or str(int(time.time()))
+    run(args.cache_mode, run_id)

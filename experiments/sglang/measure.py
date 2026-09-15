@@ -7,7 +7,7 @@ as additional ground truth not available in the vLLM experiments.
 import time
 import requests
 
-SGLANG_URL = "http://localhost:30001/generate"
+SGLANG_URL = "http://localhost:30010/generate"
 
 def send_request(prompt: str, max_new_tokens: int = 1, temperature: float = 0.0, timeout: float = 60.0, cache_salt: str = None) -> dict:
     """

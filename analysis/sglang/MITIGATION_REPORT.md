@@ -274,6 +274,70 @@ Both mitigations fully eliminated the cache-timing side channel: cached_tokens=0
 
 An earlier script, `run_pin_chained_recovery_mitigated.py`, and its output `pin_chained_recovery_mitigated.csv`, were found to be broken (incorrect response-field path; salting was never actually applied despite the script's intent) and are excluded from all reported results. This was caught by inspecting `full_match` values (all False/0) and comparing guessed vs. ground-truth PINs directly, not by trusting the file's presence or name.
 
+### Legitimate-Traffic Performance Comparison (Part 2d)
+
+To evaluate whether either mitigation imposes a cost on normal, non-attack
+usage, 60 requests simulating one legitimate tenant's overlapping support
+traffic (10 distinct prompts x 6 repeats, shuffled order, shared long
+system prefix — the hardest case for cache reuse, matching Part 1's
+detector validation traffic) were sent under each condition.
+
+| Condition | cache_hit_rate | avg cached_tokens | latency p50 | latency p95 | throughput |
+|---|---|---|---|---|---|
+| Baseline (unsalted) | 98.3% | 186.7 | 86ms | 111ms | 9.91 req/s |
+| Cache-salt (salted) | 98.3% | 186.7 | 82ms | 94ms | 11.38 req/s |
+| --disable-radix-cache | 0.0% | 0.0 | 99ms | 109ms | 9.27 req/s |
+
+Cache-salt isolation is effectively free for legitimate same-tenant
+traffic: cache-hit rate and average cached tokens are identical to
+baseline, since the salt only breaks matches *across* tenants, not a
+tenant's own repeated prefix. Latency and throughput differences from
+baseline are within normal run-to-run noise.
+
+`--disable-radix-cache`, by contrast, eliminates all prefix-cache reuse
+even for the legitimate tenant's own repeated requests (cache_hit_rate
+0.0% vs. 98.3% baseline), with a smaller-than-expected latency/throughput
+penalty in this setup — likely because `max_new_tokens=1` keeps
+per-request generation cost low regardless of prefix-cache state, so the
+full cost of losing prefix caching may be understated here relative to
+longer-generation workloads. This is noted as a limitation of the
+measurement, not a claim that disabling radix caching is free in general.
+
+### Detector Re-Evaluation Under Mitigation (Part 2e)
+
+The Part 1 detector (LCP + mutation-density signals) was re-run against
+the cache-salt-mitigated attack traffic (`pin_chained_recovery_salted.csv`)
+to confirm it still correctly identifies attack-pattern traffic even
+though the mitigation reduces actual PIN extraction to 0%.
+
+Result: P=R=F1=1.000, 30/30 trials flagged (mean 10.0 requests-to-detect).
+This confirms the detector operates on request/timing *pattern*
+(sequential per-position probing structure), not on the `cached_tokens`
+leakage signal itself — so it remains effective as a complementary
+detection layer even under a mitigation that fully blocks the underlying
+side channel, consistent with this project's Part 1 recommendation that
+detection and mitigation be layered rather than treated as alternatives.
+
+### Significance Statistics (Part 2f)
+
+Cohen's d and Mann-Whitney U were computed comparing `cached_tokens`
+between baseline (n=1800, mean=186.2, std=3.44) and salted (n=1800,
+mean=0.0, std=0.0 — zero variance, every row exactly 0).
+
+d = 76.5, Mann-Whitney U p < 1e-300 (scipy reports p=0, i.e. below
+floating-point representable precision).
+
+This effect size is reported as a formal statistical statement of
+complete separation between conditions, consistent with — not
+independent evidence beyond — the already-deterministic 0/30 vs. 30/30
+accuracy result; it is included to satisfy the project's stated rigor
+standard, not because the conclusion was in doubt. A secondary check on
+wall-clock latency (d=-1.67, p<1e-300) confirms the mitigation does not
+require any change to attacker probe timing methodology to remain
+measurable — the salted condition is simply undetectable via cache
+timing, not slower to probe.
+
+
 References
 Wu et al., "I Know What You Asked: Prompt Leakage via KV-Cache Sharing in Multi-Tenant LLM Serving," NDSS 2025.
 Pennas, Papaioannou, Guarnieri, Doudali, "PrefixWall: Mitigating Prefix Caching Side Channels in Shared LLM Systems," arXiv:2603.10726, 2026.

@@ -24,10 +24,10 @@ import requests
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from measure import send_request
-from config import SHARED_PUBLIC_PREFIX, CANDIDATES_PREFIX as CANDIDATES
+from config import SHARED_PUBLIC_PREFIX, CANDIDATES_UUID as CANDIDATES
 from apps.shared_client import resolve_salt, CACHE_MODES
 
-OUT_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "results", "sglang", "candidate_recovery_predictable_prefix.csv"))
+OUT_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "results", "sglang", "candidate_recovery_uuid.csv"))
 FLUSH_URL = "http://localhost:30010/flush_cache"
 N_TRIALS = 30
 GAP_SECONDS = 1  # validated safe gap from run_cross_tenant_gap.py

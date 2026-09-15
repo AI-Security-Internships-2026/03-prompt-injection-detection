@@ -10,6 +10,10 @@ Detect PIN repeatedly without a fresh flush+submit cycle will accumulate
 noise from prior guesses and degrade results.
 """
 import sys, os, secrets
+from apps.shared_client import resolve_salt
+import os, uuid
+CACHE_MODE = os.environ.get("CACHE_MODE", "shared")
+RUN_ID = os.environ.get("RUN_ID", uuid.uuid4().hex[:8])
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "experiments", "sglang"))
 
@@ -42,7 +46,7 @@ def pin_probe(known_prefix: str, guess_digit: str) -> dict:
     remaining = PIN_LENGTH - len(known_prefix) - 1
     guess_digits = known_prefix + guess_digit + PLACEHOLDER_DIGIT * remaining
     prompt = SHARED_PUBLIC_PREFIX + PIN_LABEL + format_pin(guess_digits) + PIN_TRAILING_MARKER
-    return send_to_sglang(prompt, cache_salt="tenant_attacker")
+    return send_to_sglang(prompt, cache_salt=resolve_salt(CACHE_MODE, "attacker", RUN_ID))
 
 class LoginRequest(BaseModel):
     username: str
@@ -72,7 +76,7 @@ def probe(req: ProbeRequest, authorization: Optional[str] = Header(None)):
     if authorization not in _sessions:
         raise HTTPException(status_code=401, detail="not logged in")
     prompt = SHARED_PUBLIC_PREFIX + req.guess
-    result = send_to_sglang(prompt, cache_salt="tenant_attacker")
+    result = send_to_sglang(prompt, cache_salt=resolve_salt(CACHE_MODE, "attacker", RUN_ID))
     return {
         "wall_clock_latency": result["wall_clock_latency"],
         "cached_tokens": result["cached_tokens"],
