@@ -1,0 +1,14 @@
+=== /home/rana/promptpeek-repro/results/sglang/kv2/level3_shared_qwen_v2.csv ===
+  n_trials: 30
+  exact_match_rate: 0.0000
+  overall_digit_accuracy: 0.0111
+  mean_queries_per_trial: 60.00
+  latency_mean_ms: 151.51
+  latency_std_ms: 2.00
+  failure cases (trial, ground_truth, inferred):
+    trial=0 gt=137978 inferred=984632
+    trial=1 gt=745382 inferred=006166
+    trial=2 gt=029429 inferred=254382
+    trial=3 gt=635130 inferred=343041
+    trial=4 gt=218893 inferred=129338
+

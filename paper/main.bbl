@@ -1,0 +1,64 @@
+\begin{thebibliography}{7}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Carlini and Nasr(2024)]{carlini2024remote}
+Nicholas Carlini and Milad Nasr.
+\newblock Remote timing attacks on efficient language model inference, 2024.
+\newblock [VERIFY CITATION] Exact venue/arXiv ID not confirmed from source
+  material.
+
+\bibitem[Chu et~al.(2025)Chu, Lin, Xiang, Shen, Su, Chu, Yang, Zhang, Wu, and
+  Zhang]{chu2025safekv}
+Xin Chu, Zhuoyuan Lin, Yiran Xiang, Chuan Shen, Wenjia Su, Yifan Chu, Zhen
+  Yang, Chao Zhang, Yifei Wu, and Yinzhi Zhang.
+\newblock Selective kv-cache sharing to mitigate timing side-channels in llm
+  inference.
+\newblock \emph{arXiv preprint arXiv:2508.08438}, 2025.
+\newblock [VERIFY CITATION] Author list order reconstructed from project
+  documentation; recommend cross-checking against the published arXiv listing
+  before final submission.
+
+\bibitem[Gu et~al.(2025)]{gu2025auditing}
+Chenxi Gu et~al.
+\newblock Auditing prompt caching in language model apis, 2025.
+\newblock [VERIFY CITATION] Full author list, venue, and identifier not
+  available from source material.
+
+\bibitem[Pang et~al.(2024)]{pang2024partitioning}
+Ren Pang et~al.
+\newblock Cache partitioning for mitigating timing side-channel attacks in llm
+  serving systems, 2024.
+\newblock [VERIFY CITATION] Full author list, venue, and identifier not
+  available from source material.
+
+\bibitem[Pennas et~al.(2026)Pennas, Papaioannou, Guarnieri, and
+  Doudali]{pennas2026prefixwall}
+Aristeidis Pennas, Konstantinos Papaioannou, Marco Guarnieri, and
+  Thaleia~Dimitra Doudali.
+\newblock Prefixwall: Mitigating prefix caching side channels in shared llm
+  systems.
+\newblock \emph{arXiv preprint arXiv:2603.10726}, 2026.
+
+\bibitem[Wu et~al.(2025)]{wu2025promptpeek}
+Guanlong Wu et~al.
+\newblock I know what you asked: Prompt leakage via kv-cache sharing in
+  multi-tenant llm serving.
+\newblock In \emph{Network and Distributed System Security Symposium (NDSS)},
+  2025.
+\newblock [VERIFY CITATION] Full author list and exact venue details not
+  available from source material; title and venue as reported in project
+  documentation.
+
+\bibitem[Zheng et~al.(2024)]{zheng2024inputsnatch}
+Xinyu Zheng et~al.
+\newblock Inputsnatch: Stealing input in llm services via timing side-channel
+  attacks.
+\newblock \emph{arXiv preprint arXiv:2411.18191}, 2024.
+\newblock [VERIFY CITATION] Full author list not available from source
+  material.
+
+\end{thebibliography}

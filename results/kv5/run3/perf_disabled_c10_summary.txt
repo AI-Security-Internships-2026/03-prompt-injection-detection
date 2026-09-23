@@ -1,0 +1,4 @@
+mode=cache-disabled concurrency=10 total_requests=200
+elapsed_s=4.68 throughput_req_s=42.78
+p50_ms=236.94 p95_ms=243.82 p99_ms=247.61
+cache_hit_rate=0.0

@@ -1,0 +1,771 @@
+=== REAL: pin_chained_recovery ===
+=== trial 0 (ground truth hidden from attacker logic) ===
+  trial=0 position=1 known_prefix='' recovered_digit=0 actual=4 WRONG
+  trial=0 position=2 known_prefix='0' recovered_digit=0 actual=2 WRONG
+  trial=0 position=3 known_prefix='00' recovered_digit=0 actual=6 WRONG
+  trial=0 position=4 known_prefix='000' recovered_digit=0 actual=5 WRONG
+  trial=0 position=5 known_prefix='0000' recovered_digit=0 actual=3 WRONG
+  trial=0 position=6 known_prefix='00000' recovered_digit=0 actual=6 WRONG
+  --> recovered=000000 actual=426536 MISMATCH
+
+=== trial 1 (ground truth hidden from attacker logic) ===
+  trial=1 position=1 known_prefix='' recovered_digit=0 actual=4 WRONG
+  trial=1 position=2 known_prefix='0' recovered_digit=0 actual=7 WRONG
+  trial=1 position=3 known_prefix='00' recovered_digit=0 actual=1 WRONG
+  trial=1 position=4 known_prefix='000' recovered_digit=0 actual=4 WRONG
+  trial=1 position=5 known_prefix='0000' recovered_digit=0 actual=3 WRONG
+  trial=1 position=6 known_prefix='00000' recovered_digit=0 actual=0 OK
+  --> recovered=000000 actual=471430 MISMATCH
+
+=== trial 2 (ground truth hidden from attacker logic) ===
+  trial=2 position=1 known_prefix='' recovered_digit=0 actual=4 WRONG
+  trial=2 position=2 known_prefix='0' recovered_digit=0 actual=4 WRONG
+  trial=2 position=3 known_prefix='00' recovered_digit=0 actual=8 WRONG
+  trial=2 position=4 known_prefix='000' recovered_digit=0 actual=0 OK
+  trial=2 position=5 known_prefix='0000' recovered_digit=0 actual=9 WRONG
+  trial=2 position=6 known_prefix='00000' recovered_digit=0 actual=9 WRONG
+  --> recovered=000000 actual=448099 MISMATCH
+
+=== trial 3 (ground truth hidden from attacker logic) ===
+  trial=3 position=1 known_prefix='' recovered_digit=0 actual=6 WRONG
+  trial=3 position=2 known_prefix='0' recovered_digit=0 actual=4 WRONG
+  trial=3 position=3 known_prefix='00' recovered_digit=0 actual=2 WRONG
+  trial=3 position=4 known_prefix='000' recovered_digit=0 actual=3 WRONG
+  trial=3 position=5 known_prefix='0000' recovered_digit=0 actual=3 WRONG
+  trial=3 position=6 known_prefix='00000' recovered_digit=0 actual=8 WRONG
+  --> recovered=000000 actual=642338 MISMATCH
+
+=== trial 4 (ground truth hidden from attacker logic) ===
+  trial=4 position=1 known_prefix='' recovered_digit=0 actual=7 WRONG
+  trial=4 position=2 known_prefix='0' recovered_digit=0 actual=0 OK
+  trial=4 position=3 known_prefix='00' recovered_digit=0 actual=5 WRONG
+  trial=4 position=4 known_prefix='000' recovered_digit=0 actual=5 WRONG
+  trial=4 position=5 known_prefix='0000' recovered_digit=0 actual=1 WRONG
+  trial=4 position=6 known_prefix='00000' recovered_digit=0 actual=8 WRONG
+  --> recovered=000000 actual=705518 MISMATCH
+
+=== trial 5 (ground truth hidden from attacker logic) ===
+  trial=5 position=1 known_prefix='' recovered_digit=0 actual=6 WRONG
+  trial=5 position=2 known_prefix='0' recovered_digit=0 actual=3 WRONG
+  trial=5 position=3 known_prefix='00' recovered_digit=0 actual=0 OK
+  trial=5 position=4 known_prefix='000' recovered_digit=0 actual=0 OK
+  trial=5 position=5 known_prefix='0000' recovered_digit=0 actual=4 WRONG
+  trial=5 position=6 known_prefix='00000' recovered_digit=0 actual=5 WRONG
+  --> recovered=000000 actual=630045 MISMATCH
+
+=== trial 6 (ground truth hidden from attacker logic) ===
+  trial=6 position=1 known_prefix='' recovered_digit=0 actual=7 WRONG
+  trial=6 position=2 known_prefix='0' recovered_digit=0 actual=0 OK
+  trial=6 position=3 known_prefix='00' recovered_digit=0 actual=0 OK
+  trial=6 position=4 known_prefix='000' recovered_digit=0 actual=0 OK
+  trial=6 position=5 known_prefix='0000' recovered_digit=0 actual=9 WRONG
+  trial=6 position=6 known_prefix='00000' recovered_digit=0 actual=3 WRONG
+  --> recovered=000000 actual=700093 MISMATCH
+
+=== trial 7 (ground truth hidden from attacker logic) ===
+  trial=7 position=1 known_prefix='' recovered_digit=0 actual=4 WRONG
+  trial=7 position=2 known_prefix='0' recovered_digit=0 actual=7 WRONG
+  trial=7 position=3 known_prefix='00' recovered_digit=0 actual=3 WRONG
+  trial=7 position=4 known_prefix='000' recovered_digit=0 actual=0 OK
+  trial=7 position=5 known_prefix='0000' recovered_digit=0 actual=1 WRONG
+  trial=7 position=6 known_prefix='00000' recovered_digit=0 actual=1 WRONG
+  --> recovered=000000 actual=473011 MISMATCH
+
+=== trial 8 (ground truth hidden from attacker logic) ===
+  trial=8 position=1 known_prefix='' recovered_digit=0 actual=8 WRONG
+  trial=8 position=2 known_prefix='0' recovered_digit=0 actual=1 WRONG
+  trial=8 position=3 known_prefix='00' recovered_digit=0 actual=3 WRONG
+  trial=8 position=4 known_prefix='000' recovered_digit=0 actual=0 OK
+  trial=8 position=5 known_prefix='0000' recovered_digit=0 actual=4 WRONG
+  trial=8 position=6 known_prefix='00000' recovered_digit=0 actual=4 WRONG
+  --> recovered=000000 actual=813044 MISMATCH
+
+=== trial 9 (ground truth hidden from attacker logic) ===
+  trial=9 position=1 known_prefix='' recovered_digit=0 actual=5 WRONG
+  trial=9 position=2 known_prefix='0' recovered_digit=0 actual=0 OK
+  trial=9 position=3 known_prefix='00' recovered_digit=0 actual=2 WRONG
+  trial=9 position=4 known_prefix='000' recovered_digit=0 actual=9 WRONG
+  trial=9 position=5 known_prefix='0000' recovered_digit=0 actual=8 WRONG
+  trial=9 position=6 known_prefix='00000' recovered_digit=0 actual=5 WRONG
+  --> recovered=000000 actual=502985 MISMATCH
+
+=== trial 10 (ground truth hidden from attacker logic) ===
+  trial=10 position=1 known_prefix='' recovered_digit=0 actual=0 OK
+  trial=10 position=2 known_prefix='0' recovered_digit=0 actual=6 WRONG
+  trial=10 position=3 known_prefix='00' recovered_digit=0 actual=3 WRONG
+  trial=10 position=4 known_prefix='000' recovered_digit=0 actual=3 WRONG
+  trial=10 position=5 known_prefix='0000' recovered_digit=0 actual=3 WRONG
+  trial=10 position=6 known_prefix='00000' recovered_digit=0 actual=1 WRONG
+  --> recovered=000000 actual=063331 MISMATCH
+
+=== trial 11 (ground truth hidden from attacker logic) ===
+  trial=11 position=1 known_prefix='' recovered_digit=0 actual=6 WRONG
+  trial=11 position=2 known_prefix='0' recovered_digit=0 actual=8 WRONG
+  trial=11 position=3 known_prefix='00' recovered_digit=0 actual=8 WRONG
+  trial=11 position=4 known_prefix='000' recovered_digit=0 actual=1 WRONG
+  trial=11 position=5 known_prefix='0000' recovered_digit=0 actual=3 WRONG
+  trial=11 position=6 known_prefix='00000' recovered_digit=0 actual=1 WRONG
+  --> recovered=000000 actual=688131 MISMATCH
+
+=== trial 12 (ground truth hidden from attacker logic) ===
+  trial=12 position=1 known_prefix='' recovered_digit=0 actual=1 WRONG
+  trial=12 position=2 known_prefix='0' recovered_digit=0 actual=1 WRONG
+  trial=12 position=3 known_prefix='00' recovered_digit=0 actual=1 WRONG
+  trial=12 position=4 known_prefix='000' recovered_digit=0 actual=1 WRONG
+  trial=12 position=5 known_prefix='0000' recovered_digit=0 actual=9 WRONG
+  trial=12 position=6 known_prefix='00000' recovered_digit=0 actual=0 OK
+  --> recovered=000000 actual=111190 MISMATCH
+
+=== trial 13 (ground truth hidden from attacker logic) ===
+  trial=13 position=1 known_prefix='' recovered_digit=0 actual=3 WRONG
+  trial=13 position=2 known_prefix='0' recovered_digit=0 actual=6 WRONG
+  trial=13 position=3 known_prefix='00' recovered_digit=0 actual=5 WRONG
+  trial=13 position=4 known_prefix='000' recovered_digit=0 actual=9 WRONG
+  trial=13 position=5 known_prefix='0000' recovered_digit=0 actual=4 WRONG
+  trial=13 position=6 known_prefix='00000' recovered_digit=0 actual=4 WRONG
+  --> recovered=000000 actual=365944 MISMATCH
+
+=== trial 14 (ground truth hidden from attacker logic) ===
+  trial=14 position=1 known_prefix='' recovered_digit=0 actual=6 WRONG
+  trial=14 position=2 known_prefix='0' recovered_digit=0 actual=0 OK
+  trial=14 position=3 known_prefix='00' recovered_digit=0 actual=2 WRONG
+  trial=14 position=4 known_prefix='000' recovered_digit=0 actual=3 WRONG
+  trial=14 position=5 known_prefix='0000' recovered_digit=0 actual=7 WRONG
+  trial=14 position=6 known_prefix='00000' recovered_digit=0 actual=8 WRONG
+  --> recovered=000000 actual=602378 MISMATCH
+
+=== trial 15 (ground truth hidden from attacker logic) ===
+  trial=15 position=1 known_prefix='' recovered_digit=0 actual=9 WRONG
+  trial=15 position=2 known_prefix='0' recovered_digit=0 actual=7 WRONG
+  trial=15 position=3 known_prefix='00' recovered_digit=0 actual=3 WRONG
+  trial=15 position=4 known_prefix='000' recovered_digit=0 actual=8 WRONG
+  trial=15 position=5 known_prefix='0000' recovered_digit=0 actual=8 WRONG
+  trial=15 position=6 known_prefix='00000' recovered_digit=0 actual=5 WRONG
+  --> recovered=000000 actual=973885 MISMATCH
+
+=== trial 16 (ground truth hidden from attacker logic) ===
+  trial=16 position=1 known_prefix='' recovered_digit=0 actual=2 WRONG
+  trial=16 position=2 known_prefix='0' recovered_digit=0 actual=6 WRONG
+  trial=16 position=3 known_prefix='00' recovered_digit=0 actual=4 WRONG
+  trial=16 position=4 known_prefix='000' recovered_digit=0 actual=4 WRONG
+  trial=16 position=5 known_prefix='0000' recovered_digit=0 actual=5 WRONG
+  trial=16 position=6 known_prefix='00000' recovered_digit=0 actual=7 WRONG
+  --> recovered=000000 actual=264457 MISMATCH
+
+=== trial 17 (ground truth hidden from attacker logic) ===
+  trial=17 position=1 known_prefix='' recovered_digit=0 actual=4 WRONG
+  trial=17 position=2 known_prefix='0' recovered_digit=0 actual=5 WRONG
+  trial=17 position=3 known_prefix='00' recovered_digit=0 actual=5 WRONG
+  trial=17 position=4 known_prefix='000' recovered_digit=0 actual=2 WRONG
+  trial=17 position=5 known_prefix='0000' recovered_digit=0 actual=7 WRONG
+  trial=17 position=6 known_prefix='00000' recovered_digit=0 actual=6 WRONG
+  --> recovered=000000 actual=455276 MISMATCH
+
+=== trial 18 (ground truth hidden from attacker logic) ===
+  trial=18 position=1 known_prefix='' recovered_digit=0 actual=8 WRONG
+  trial=18 position=2 known_prefix='0' recovered_digit=0 actual=8 WRONG
+  trial=18 position=3 known_prefix='00' recovered_digit=0 actual=7 WRONG
+  trial=18 position=4 known_prefix='000' recovered_digit=0 actual=2 WRONG
+  trial=18 position=5 known_prefix='0000' recovered_digit=0 actual=7 WRONG
+  trial=18 position=6 known_prefix='00000' recovered_digit=0 actual=1 WRONG
+  --> recovered=000000 actual=887271 MISMATCH
+
+=== trial 19 (ground truth hidden from attacker logic) ===
+  trial=19 position=1 known_prefix='' recovered_digit=0 actual=4 WRONG
+  trial=19 position=2 known_prefix='0' recovered_digit=0 actual=9 WRONG
+  trial=19 position=3 known_prefix='00' recovered_digit=0 actual=1 WRONG
+  trial=19 position=4 known_prefix='000' recovered_digit=0 actual=0 OK
+  trial=19 position=5 known_prefix='0000' recovered_digit=0 actual=1 WRONG
+  trial=19 position=6 known_prefix='00000' recovered_digit=0 actual=0 OK
+  --> recovered=000000 actual=491010 MISMATCH
+
+=== trial 20 (ground truth hidden from attacker logic) ===
+  trial=20 position=1 known_prefix='' recovered_digit=0 actual=2 WRONG
+  trial=20 position=2 known_prefix='0' recovered_digit=0 actual=1 WRONG
+  trial=20 position=3 known_prefix='00' recovered_digit=0 actual=9 WRONG
+  trial=20 position=4 known_prefix='000' recovered_digit=0 actual=3 WRONG
+  trial=20 position=5 known_prefix='0000' recovered_digit=0 actual=3 WRONG
+  trial=20 position=6 known_prefix='00000' recovered_digit=0 actual=0 OK
+  --> recovered=000000 actual=219330 MISMATCH
+
+=== trial 21 (ground truth hidden from attacker logic) ===
+  trial=21 position=1 known_prefix='' recovered_digit=0 actual=3 WRONG
+  trial=21 position=2 known_prefix='0' recovered_digit=0 actual=7 WRONG
+  trial=21 position=3 known_prefix='00' recovered_digit=0 actual=4 WRONG
+  trial=21 position=4 known_prefix='000' recovered_digit=0 actual=8 WRONG
+  trial=21 position=5 known_prefix='0000' recovered_digit=0 actual=0 OK
+  trial=21 position=6 known_prefix='00000' recovered_digit=0 actual=9 WRONG
+  --> recovered=000000 actual=374809 MISMATCH
+
+=== trial 22 (ground truth hidden from attacker logic) ===
+  trial=22 position=1 known_prefix='' recovered_digit=0 actual=3 WRONG
+  trial=22 position=2 known_prefix='0' recovered_digit=0 actual=2 WRONG
+  trial=22 position=3 known_prefix='00' recovered_digit=0 actual=3 WRONG
+  trial=22 position=4 known_prefix='000' recovered_digit=0 actual=8 WRONG
+  trial=22 position=5 known_prefix='0000' recovered_digit=0 actual=9 WRONG
+  trial=22 position=6 known_prefix='00000' recovered_digit=0 actual=8 WRONG
+  --> recovered=000000 actual=323898 MISMATCH
+
+=== trial 23 (ground truth hidden from attacker logic) ===
+  trial=23 position=1 known_prefix='' recovered_digit=0 actual=2 WRONG
+  trial=23 position=2 known_prefix='0' recovered_digit=0 actual=1 WRONG
+  trial=23 position=3 known_prefix='00' recovered_digit=0 actual=1 WRONG
+  trial=23 position=4 known_prefix='000' recovered_digit=0 actual=4 WRONG
+  trial=23 position=5 known_prefix='0000' recovered_digit=0 actual=7 WRONG
+  trial=23 position=6 known_prefix='00000' recovered_digit=0 actual=2 WRONG
+  --> recovered=000000 actual=211472 MISMATCH
+
+=== trial 24 (ground truth hidden from attacker logic) ===
+  trial=24 position=1 known_prefix='' recovered_digit=0 actual=8 WRONG
+  trial=24 position=2 known_prefix='0' recovered_digit=0 actual=7 WRONG
+  trial=24 position=3 known_prefix='00' recovered_digit=0 actual=1 WRONG
+  trial=24 position=4 known_prefix='000' recovered_digit=0 actual=3 WRONG
+  trial=24 position=5 known_prefix='0000' recovered_digit=0 actual=2 WRONG
+  trial=24 position=6 known_prefix='00000' recovered_digit=0 actual=8 WRONG
+  --> recovered=000000 actual=871328 MISMATCH
+
+=== trial 25 (ground truth hidden from attacker logic) ===
+  trial=25 position=1 known_prefix='' recovered_digit=0 actual=6 WRONG
+  trial=25 position=2 known_prefix='0' recovered_digit=0 actual=9 WRONG
+  trial=25 position=3 known_prefix='00' recovered_digit=0 actual=4 WRONG
+  trial=25 position=4 known_prefix='000' recovered_digit=0 actual=5 WRONG
+  trial=25 position=5 known_prefix='0000' recovered_digit=0 actual=0 OK
+  trial=25 position=6 known_prefix='00000' recovered_digit=0 actual=9 WRONG
+  --> recovered=000000 actual=694509 MISMATCH
+
+=== trial 26 (ground truth hidden from attacker logic) ===
+  trial=26 position=1 known_prefix='' recovered_digit=0 actual=9 WRONG
+  trial=26 position=2 known_prefix='0' recovered_digit=0 actual=3 WRONG
+  trial=26 position=3 known_prefix='00' recovered_digit=0 actual=6 WRONG
+  trial=26 position=4 known_prefix='000' recovered_digit=0 actual=2 WRONG
+  trial=26 position=5 known_prefix='0000' recovered_digit=0 actual=2 WRONG
+  trial=26 position=6 known_prefix='00000' recovered_digit=0 actual=5 WRONG
+  --> recovered=000000 actual=936225 MISMATCH
+
+=== trial 27 (ground truth hidden from attacker logic) ===
+  trial=27 position=1 known_prefix='' recovered_digit=0 actual=9 WRONG
+  trial=27 position=2 known_prefix='0' recovered_digit=0 actual=1 WRONG
+  trial=27 position=3 known_prefix='00' recovered_digit=0 actual=6 WRONG
+  trial=27 position=4 known_prefix='000' recovered_digit=0 actual=8 WRONG
+  trial=27 position=5 known_prefix='0000' recovered_digit=0 actual=4 WRONG
+  trial=27 position=6 known_prefix='00000' recovered_digit=0 actual=7 WRONG
+  --> recovered=000000 actual=916847 MISMATCH
+
+=== trial 28 (ground truth hidden from attacker logic) ===
+  trial=28 position=1 known_prefix='' recovered_digit=0 actual=7 WRONG
+  trial=28 position=2 known_prefix='0' recovered_digit=0 actual=1 WRONG
+  trial=28 position=3 known_prefix='00' recovered_digit=0 actual=4 WRONG
+  trial=28 position=4 known_prefix='000' recovered_digit=0 actual=2 WRONG
+  trial=28 position=5 known_prefix='0000' recovered_digit=0 actual=3 WRONG
+  trial=28 position=6 known_prefix='00000' recovered_digit=0 actual=6 WRONG
+  --> recovered=000000 actual=714236 MISMATCH
+
+=== trial 29 (ground truth hidden from attacker logic) ===
+  trial=29 position=1 known_prefix='' recovered_digit=0 actual=3 WRONG
+  trial=29 position=2 known_prefix='0' recovered_digit=0 actual=5 WRONG
+  trial=29 position=3 known_prefix='00' recovered_digit=0 actual=9 WRONG
+  trial=29 position=4 known_prefix='000' recovered_digit=0 actual=9 WRONG
+  trial=29 position=5 known_prefix='0000' recovered_digit=0 actual=8 WRONG
+  trial=29 position=6 known_prefix='00000' recovered_digit=0 actual=1 WRONG
+  --> recovered=000000 actual=359981 MISMATCH
+
+
+Saved 1800 rows to /home/rana/promptpeek-repro/results/sglang/kv2/pin_chained_disabled.csv
+Full-PIN reconstruction accuracy: 0/30 = 0.00%
+exit: 0
+=== REAL: candidate_recovery_full ===
+  trial=0 probe=0 cached_tokens=0/182 latency=0.2539s MATCH
+  trial=0 probe=1 cached_tokens=0/182 latency=0.5023s 
+  trial=0 probe=2 cached_tokens=0/182 latency=0.5079s 
+  trial=0 probe=3 cached_tokens=0/182 latency=0.4512s 
+  trial=1 probe=0 cached_tokens=0/182 latency=0.3284s 
+  trial=1 probe=1 cached_tokens=0/182 latency=0.4691s MATCH
+  trial=1 probe=2 cached_tokens=0/182 latency=0.4731s 
+  trial=1 probe=3 cached_tokens=0/182 latency=0.4665s 
+  trial=2 probe=0 cached_tokens=0/182 latency=0.3190s MATCH
+  trial=2 probe=1 cached_tokens=0/182 latency=0.5105s 
+  trial=2 probe=2 cached_tokens=0/182 latency=0.4354s 
+  trial=2 probe=3 cached_tokens=0/182 latency=0.5029s 
+  trial=3 probe=0 cached_tokens=0/182 latency=0.3113s 
+  trial=3 probe=1 cached_tokens=0/182 latency=0.4711s 
+  trial=3 probe=2 cached_tokens=0/182 latency=0.4762s 
+  trial=3 probe=3 cached_tokens=0/182 latency=0.4973s MATCH
+  trial=4 probe=0 cached_tokens=0/182 latency=0.3238s 
+  trial=4 probe=1 cached_tokens=0/182 latency=0.4789s 
+  trial=4 probe=2 cached_tokens=0/182 latency=0.4556s MATCH
+  trial=4 probe=3 cached_tokens=0/182 latency=0.5093s 
+  trial=5 probe=0 cached_tokens=0/182 latency=0.3207s 
+  trial=5 probe=1 cached_tokens=0/182 latency=0.5145s 
+  trial=5 probe=2 cached_tokens=0/182 latency=0.4448s 
+  trial=5 probe=3 cached_tokens=0/182 latency=0.5091s MATCH
+  trial=6 probe=0 cached_tokens=0/182 latency=0.3071s 
+  trial=6 probe=1 cached_tokens=0/182 latency=0.4654s MATCH
+  trial=6 probe=2 cached_tokens=0/182 latency=0.4894s 
+  trial=6 probe=3 cached_tokens=0/182 latency=0.5135s 
+  trial=7 probe=0 cached_tokens=0/182 latency=0.2941s 
+  trial=7 probe=1 cached_tokens=0/182 latency=0.4824s MATCH
+  trial=7 probe=2 cached_tokens=0/182 latency=0.4540s 
+  trial=7 probe=3 cached_tokens=0/182 latency=0.5189s 
+  trial=8 probe=0 cached_tokens=0/182 latency=0.2934s 
+  trial=8 probe=1 cached_tokens=0/182 latency=0.4956s 
+  trial=8 probe=2 cached_tokens=0/182 latency=0.4451s 
+  trial=8 probe=3 cached_tokens=0/182 latency=0.5111s MATCH
+  trial=9 probe=0 cached_tokens=0/182 latency=0.3192s 
+  trial=9 probe=1 cached_tokens=0/182 latency=0.4619s 
+  trial=9 probe=2 cached_tokens=0/182 latency=0.4758s MATCH
+  trial=9 probe=3 cached_tokens=0/182 latency=0.5222s 
+  trial=10 probe=0 cached_tokens=0/182 latency=0.3316s 
+  trial=10 probe=1 cached_tokens=0/182 latency=0.4808s MATCH
+  trial=10 probe=2 cached_tokens=0/182 latency=0.4554s 
+  trial=10 probe=3 cached_tokens=0/182 latency=0.5203s 
+  trial=11 probe=0 cached_tokens=0/182 latency=0.3143s 
+  trial=11 probe=1 cached_tokens=0/182 latency=0.4960s MATCH
+  trial=11 probe=2 cached_tokens=0/182 latency=0.4564s 
+  trial=11 probe=3 cached_tokens=0/182 latency=0.5248s 
+  trial=12 probe=0 cached_tokens=0/182 latency=0.3273s MATCH
+  trial=12 probe=1 cached_tokens=0/182 latency=0.4505s 
+  trial=12 probe=2 cached_tokens=0/182 latency=0.5003s 
+  trial=12 probe=3 cached_tokens=0/182 latency=0.5059s 
+  trial=13 probe=0 cached_tokens=0/182 latency=0.3190s 
+  trial=13 probe=1 cached_tokens=0/182 latency=0.4824s MATCH
+  trial=13 probe=2 cached_tokens=0/182 latency=0.4635s 
+  trial=13 probe=3 cached_tokens=0/182 latency=0.5104s 
+  trial=14 probe=0 cached_tokens=0/182 latency=0.3154s 
+  trial=14 probe=1 cached_tokens=0/182 latency=0.5000s MATCH
+  trial=14 probe=2 cached_tokens=0/182 latency=0.4778s 
+  trial=14 probe=3 cached_tokens=0/182 latency=0.4958s 
+  trial=15 probe=0 cached_tokens=0/182 latency=0.3283s MATCH
+  trial=15 probe=1 cached_tokens=0/182 latency=0.4705s 
+  trial=15 probe=2 cached_tokens=0/182 latency=0.4864s 
+  trial=15 probe=3 cached_tokens=0/182 latency=0.4685s 
+  trial=16 probe=0 cached_tokens=0/182 latency=0.3305s 
+  trial=16 probe=1 cached_tokens=0/182 latency=0.4654s 
+  trial=16 probe=2 cached_tokens=0/182 latency=0.4787s 
+  trial=16 probe=3 cached_tokens=0/182 latency=0.5018s MATCH
+  trial=17 probe=0 cached_tokens=0/182 latency=0.3226s 
+  trial=17 probe=1 cached_tokens=0/182 latency=0.4901s MATCH
+  trial=17 probe=2 cached_tokens=0/182 latency=0.4587s 
+  trial=17 probe=3 cached_tokens=0/182 latency=0.5234s 
+  trial=18 probe=0 cached_tokens=0/182 latency=0.3181s 
+  trial=18 probe=1 cached_tokens=0/182 latency=0.4764s 
+  trial=18 probe=2 cached_tokens=0/182 latency=0.4399s 
+  trial=18 probe=3 cached_tokens=0/182 latency=0.5121s MATCH
+  trial=19 probe=0 cached_tokens=0/182 latency=0.3218s MATCH
+  trial=19 probe=1 cached_tokens=0/182 latency=0.4380s 
+  trial=19 probe=2 cached_tokens=0/182 latency=0.4931s 
+  trial=19 probe=3 cached_tokens=0/182 latency=0.4853s 
+  trial=20 probe=0 cached_tokens=0/182 latency=0.3066s MATCH
+  trial=20 probe=1 cached_tokens=0/182 latency=0.5123s 
+  trial=20 probe=2 cached_tokens=0/182 latency=0.4533s 
+  trial=20 probe=3 cached_tokens=0/182 latency=0.4977s 
+  trial=21 probe=0 cached_tokens=0/182 latency=0.3109s MATCH
+  trial=21 probe=1 cached_tokens=0/182 latency=0.4754s 
+  trial=21 probe=2 cached_tokens=0/182 latency=0.4868s 
+  trial=21 probe=3 cached_tokens=0/182 latency=0.4994s 
+  trial=22 probe=0 cached_tokens=0/182 latency=0.3062s 
+  trial=22 probe=1 cached_tokens=0/182 latency=0.4820s 
+  trial=22 probe=2 cached_tokens=0/182 latency=0.4576s 
+  trial=22 probe=3 cached_tokens=0/182 latency=0.5119s MATCH
+  trial=23 probe=0 cached_tokens=0/182 latency=0.3313s MATCH
+  trial=23 probe=1 cached_tokens=0/182 latency=0.4837s 
+  trial=23 probe=2 cached_tokens=0/182 latency=0.4556s 
+  trial=23 probe=3 cached_tokens=0/182 latency=0.5120s 
+  trial=24 probe=0 cached_tokens=0/182 latency=0.2923s MATCH
+  trial=24 probe=1 cached_tokens=0/182 latency=0.4911s 
+  trial=24 probe=2 cached_tokens=0/182 latency=0.4565s 
+  trial=24 probe=3 cached_tokens=0/182 latency=0.5177s 
+  trial=25 probe=0 cached_tokens=0/182 latency=0.3195s 
+  trial=25 probe=1 cached_tokens=0/182 latency=0.4842s MATCH
+  trial=25 probe=2 cached_tokens=0/182 latency=0.4556s 
+  trial=25 probe=3 cached_tokens=0/182 latency=0.5110s 
+  trial=26 probe=0 cached_tokens=0/182 latency=0.3119s 
+  trial=26 probe=1 cached_tokens=0/182 latency=0.4859s MATCH
+  trial=26 probe=2 cached_tokens=0/182 latency=0.4637s 
+  trial=26 probe=3 cached_tokens=0/182 latency=0.5027s 
+  trial=27 probe=0 cached_tokens=0/182 latency=0.3234s 
+  trial=27 probe=1 cached_tokens=0/182 latency=0.4676s 
+  trial=27 probe=2 cached_tokens=0/182 latency=0.4791s 
+  trial=27 probe=3 cached_tokens=0/182 latency=0.5232s MATCH
+  trial=28 probe=0 cached_tokens=0/182 latency=0.3232s 
+  trial=28 probe=1 cached_tokens=0/182 latency=0.4634s MATCH
+  trial=28 probe=2 cached_tokens=0/182 latency=0.4771s 
+  trial=28 probe=3 cached_tokens=0/182 latency=0.5130s 
+  trial=29 probe=0 cached_tokens=0/182 latency=0.3147s MATCH
+  trial=29 probe=1 cached_tokens=0/182 latency=0.4891s 
+  trial=29 probe=2 cached_tokens=0/182 latency=0.4614s 
+  trial=29 probe=3 cached_tokens=0/182 latency=0.4999s 
+
+Saved 120 rows to results/sglang/kv2/candidate_full_disabled.csv
+exit: 0
+=== REAL: candidate_recovery_prefix ===
+  trial=0 probe=0 cached_tokens=0/182 latency=0.2747s 
+  trial=0 probe=1 cached_tokens=0/182 latency=0.4806s MATCH
+  trial=0 probe=2 cached_tokens=0/182 latency=0.5106s 
+  trial=0 probe=3 cached_tokens=0/182 latency=0.4925s 
+  trial=1 probe=0 cached_tokens=0/182 latency=0.3072s 
+  trial=1 probe=1 cached_tokens=0/182 latency=0.4469s 
+  trial=1 probe=2 cached_tokens=0/182 latency=0.5181s MATCH
+  trial=1 probe=3 cached_tokens=0/182 latency=0.4829s 
+  trial=2 probe=0 cached_tokens=0/182 latency=0.3246s MATCH
+  trial=2 probe=1 cached_tokens=0/182 latency=0.4957s 
+  trial=2 probe=2 cached_tokens=0/182 latency=0.4567s 
+  trial=2 probe=3 cached_tokens=0/182 latency=0.5178s 
+  trial=3 probe=0 cached_tokens=0/182 latency=0.3048s MATCH
+  trial=3 probe=1 cached_tokens=0/182 latency=0.4933s 
+  trial=3 probe=2 cached_tokens=0/182 latency=0.4516s 
+  trial=3 probe=3 cached_tokens=0/182 latency=0.5257s 
+  trial=4 probe=0 cached_tokens=0/182 latency=0.3234s 
+  trial=4 probe=1 cached_tokens=0/182 latency=0.4911s 
+  trial=4 probe=2 cached_tokens=0/182 latency=0.4419s 
+  trial=4 probe=3 cached_tokens=0/182 latency=0.5140s MATCH
+  trial=5 probe=0 cached_tokens=0/182 latency=0.3015s 
+  trial=5 probe=1 cached_tokens=0/182 latency=0.5166s MATCH
+  trial=5 probe=2 cached_tokens=0/182 latency=0.4509s 
+  trial=5 probe=3 cached_tokens=0/182 latency=0.4807s 
+  trial=6 probe=0 cached_tokens=0/182 latency=0.2873s 
+  trial=6 probe=1 cached_tokens=0/182 latency=0.5087s MATCH
+  trial=6 probe=2 cached_tokens=0/182 latency=0.4792s 
+  trial=6 probe=3 cached_tokens=0/182 latency=0.4746s 
+  trial=7 probe=0 cached_tokens=0/182 latency=0.3252s 
+  trial=7 probe=1 cached_tokens=0/182 latency=0.4710s MATCH
+  trial=7 probe=2 cached_tokens=0/182 latency=0.4584s 
+  trial=7 probe=3 cached_tokens=0/182 latency=0.5102s 
+  trial=8 probe=0 cached_tokens=0/182 latency=0.3101s 
+  trial=8 probe=1 cached_tokens=0/182 latency=0.4331s 
+  trial=8 probe=2 cached_tokens=0/182 latency=0.3888s MATCH
+  trial=8 probe=3 cached_tokens=0/182 latency=0.4413s 
+  trial=9 probe=0 cached_tokens=0/182 latency=0.2499s MATCH
+  trial=9 probe=1 cached_tokens=0/182 latency=0.3438s 
+  trial=9 probe=2 cached_tokens=0/182 latency=0.4280s 
+  trial=9 probe=3 cached_tokens=0/182 latency=0.4096s 
+  trial=10 probe=0 cached_tokens=0/182 latency=0.2545s 
+  trial=10 probe=1 cached_tokens=0/182 latency=0.4319s MATCH
+  trial=10 probe=2 cached_tokens=0/182 latency=0.3959s 
+  trial=10 probe=3 cached_tokens=0/182 latency=0.4253s 
+  trial=11 probe=0 cached_tokens=0/182 latency=0.2570s MATCH
+  trial=11 probe=1 cached_tokens=0/182 latency=0.4225s 
+  trial=11 probe=2 cached_tokens=0/182 latency=0.3875s 
+  trial=11 probe=3 cached_tokens=0/182 latency=0.4502s 
+  trial=12 probe=0 cached_tokens=0/182 latency=0.2380s 
+  trial=12 probe=1 cached_tokens=0/182 latency=0.4601s 
+  trial=12 probe=2 cached_tokens=0/182 latency=0.4111s MATCH
+  trial=12 probe=3 cached_tokens=0/182 latency=0.4040s 
+  trial=13 probe=0 cached_tokens=0/182 latency=0.2445s 
+  trial=13 probe=1 cached_tokens=0/182 latency=0.4256s 
+  trial=13 probe=2 cached_tokens=0/182 latency=0.3971s 
+  trial=13 probe=3 cached_tokens=0/182 latency=0.4371s MATCH
+  trial=14 probe=0 cached_tokens=0/182 latency=0.2547s 
+  trial=14 probe=1 cached_tokens=0/182 latency=0.4311s 
+  trial=14 probe=2 cached_tokens=0/182 latency=0.3871s MATCH
+  trial=14 probe=3 cached_tokens=0/182 latency=0.4294s 
+  trial=15 probe=0 cached_tokens=0/182 latency=0.2425s 
+  trial=15 probe=1 cached_tokens=0/182 latency=0.4417s 
+  trial=15 probe=2 cached_tokens=0/182 latency=0.3876s 
+  trial=15 probe=3 cached_tokens=0/182 latency=0.4423s MATCH
+  trial=16 probe=0 cached_tokens=0/182 latency=0.2464s MATCH
+  trial=16 probe=1 cached_tokens=0/182 latency=0.4047s 
+  trial=16 probe=2 cached_tokens=0/182 latency=0.4236s 
+  trial=16 probe=3 cached_tokens=0/182 latency=0.4122s 
+  trial=17 probe=0 cached_tokens=0/182 latency=0.2465s MATCH
+  trial=17 probe=1 cached_tokens=0/182 latency=0.4146s 
+  trial=17 probe=2 cached_tokens=0/182 latency=0.4123s 
+  trial=17 probe=3 cached_tokens=0/182 latency=0.4292s 
+  trial=18 probe=0 cached_tokens=0/182 latency=0.2423s 
+  trial=18 probe=1 cached_tokens=0/182 latency=0.4381s MATCH
+  trial=18 probe=2 cached_tokens=0/182 latency=0.3995s 
+  trial=18 probe=3 cached_tokens=0/182 latency=0.4186s 
+  trial=19 probe=0 cached_tokens=0/182 latency=0.2359s 
+  trial=19 probe=1 cached_tokens=0/182 latency=0.4297s 
+  trial=19 probe=2 cached_tokens=0/182 latency=0.4031s 
+  trial=19 probe=3 cached_tokens=0/182 latency=0.4155s MATCH
+  trial=20 probe=0 cached_tokens=0/182 latency=0.2268s 
+  trial=20 probe=1 cached_tokens=0/182 latency=0.4401s MATCH
+  trial=20 probe=2 cached_tokens=0/182 latency=0.3936s 
+  trial=20 probe=3 cached_tokens=0/182 latency=0.3804s 
+  trial=21 probe=0 cached_tokens=0/182 latency=0.2233s MATCH
+  trial=21 probe=1 cached_tokens=0/182 latency=0.4381s 
+  trial=21 probe=2 cached_tokens=0/182 latency=0.4387s 
+  trial=21 probe=3 cached_tokens=0/182 latency=0.3871s 
+  trial=22 probe=0 cached_tokens=0/182 latency=0.2255s 
+  trial=22 probe=1 cached_tokens=0/182 latency=0.3434s 
+  trial=22 probe=2 cached_tokens=0/182 latency=0.3512s 
+  trial=22 probe=3 cached_tokens=0/182 latency=0.3489s MATCH
+  trial=23 probe=0 cached_tokens=0/182 latency=0.2260s 
+  trial=23 probe=1 cached_tokens=0/182 latency=0.3246s 
+  trial=23 probe=2 cached_tokens=0/182 latency=0.3557s 
+  trial=23 probe=3 cached_tokens=0/182 latency=0.3559s MATCH
+  trial=24 probe=0 cached_tokens=0/182 latency=0.2096s 
+  trial=24 probe=1 cached_tokens=0/182 latency=0.3471s 
+  trial=24 probe=2 cached_tokens=0/182 latency=0.3529s 
+  trial=24 probe=3 cached_tokens=0/182 latency=0.3385s MATCH
+  trial=25 probe=0 cached_tokens=0/182 latency=0.2185s MATCH
+  trial=25 probe=1 cached_tokens=0/182 latency=0.3523s 
+  trial=25 probe=2 cached_tokens=0/182 latency=0.3401s 
+  trial=25 probe=3 cached_tokens=0/182 latency=0.3571s 
+  trial=26 probe=0 cached_tokens=0/182 latency=0.2003s 
+  trial=26 probe=1 cached_tokens=0/182 latency=0.3545s 
+  trial=26 probe=2 cached_tokens=0/182 latency=0.3487s MATCH
+  trial=26 probe=3 cached_tokens=0/182 latency=0.3601s 
+  trial=27 probe=0 cached_tokens=0/182 latency=0.2152s MATCH
+  trial=27 probe=1 cached_tokens=0/182 latency=0.3445s 
+  trial=27 probe=2 cached_tokens=0/182 latency=0.3449s 
+  trial=27 probe=3 cached_tokens=0/182 latency=0.3429s 
+  trial=28 probe=0 cached_tokens=0/182 latency=0.2159s MATCH
+  trial=28 probe=1 cached_tokens=0/182 latency=0.3441s 
+  trial=28 probe=2 cached_tokens=0/182 latency=0.3363s 
+  trial=28 probe=3 cached_tokens=0/182 latency=0.3528s 
+  trial=29 probe=0 cached_tokens=0/182 latency=0.1967s 
+  trial=29 probe=1 cached_tokens=0/182 latency=0.3606s 
+  trial=29 probe=2 cached_tokens=0/182 latency=0.3633s MATCH
+  trial=29 probe=3 cached_tokens=0/182 latency=0.3393s 
+
+Saved 120 rows to results/sglang/kv2/candidate_prefix_disabled.csv
+exit: 0
+=== REAL: candidate_recovery_pin ===
+  trial=0 probe=0 cached_tokens=0/181 latency=0.1991s 
+  trial=0 probe=1 cached_tokens=0/181 latency=0.3588s MATCH
+  trial=0 probe=2 cached_tokens=0/181 latency=0.3350s 
+  trial=0 probe=3 cached_tokens=0/181 latency=0.3461s 
+  trial=1 probe=0 cached_tokens=0/181 latency=0.2081s 
+  trial=1 probe=1 cached_tokens=0/181 latency=0.3563s 
+  trial=1 probe=2 cached_tokens=0/181 latency=0.3335s MATCH
+  trial=1 probe=3 cached_tokens=0/181 latency=0.3663s 
+  trial=2 probe=0 cached_tokens=0/181 latency=0.2249s 
+  trial=2 probe=1 cached_tokens=0/181 latency=0.3620s MATCH
+  trial=2 probe=2 cached_tokens=0/181 latency=0.3519s 
+  trial=2 probe=3 cached_tokens=0/181 latency=0.3408s 
+  trial=3 probe=0 cached_tokens=0/181 latency=0.2136s 
+  trial=3 probe=1 cached_tokens=0/181 latency=0.3368s 
+  trial=3 probe=2 cached_tokens=0/181 latency=0.3546s 
+  trial=3 probe=3 cached_tokens=0/181 latency=0.3382s MATCH
+  trial=4 probe=0 cached_tokens=0/181 latency=0.2002s MATCH
+  trial=4 probe=1 cached_tokens=0/181 latency=0.3595s 
+  trial=4 probe=2 cached_tokens=0/181 latency=0.3470s 
+  trial=4 probe=3 cached_tokens=0/181 latency=0.3597s 
+  trial=5 probe=0 cached_tokens=0/181 latency=0.1938s 
+  trial=5 probe=1 cached_tokens=0/181 latency=0.3477s MATCH
+  trial=5 probe=2 cached_tokens=0/181 latency=0.3327s 
+  trial=5 probe=3 cached_tokens=0/181 latency=0.3527s 
+  trial=6 probe=0 cached_tokens=0/181 latency=0.1993s MATCH
+  trial=6 probe=1 cached_tokens=0/181 latency=0.3415s 
+  trial=6 probe=2 cached_tokens=0/181 latency=0.3337s 
+  trial=6 probe=3 cached_tokens=0/181 latency=0.3570s 
+  trial=7 probe=0 cached_tokens=0/181 latency=0.2111s MATCH
+  trial=7 probe=1 cached_tokens=0/181 latency=0.3836s 
+  trial=7 probe=2 cached_tokens=0/181 latency=0.3545s 
+  trial=7 probe=3 cached_tokens=0/181 latency=0.3427s 
+  trial=8 probe=0 cached_tokens=0/181 latency=0.2101s MATCH
+  trial=8 probe=1 cached_tokens=0/181 latency=0.3462s 
+  trial=8 probe=2 cached_tokens=0/181 latency=0.3318s 
+  trial=8 probe=3 cached_tokens=0/181 latency=0.3431s 
+  trial=9 probe=0 cached_tokens=0/181 latency=0.2190s 
+  trial=9 probe=1 cached_tokens=0/181 latency=0.3466s 
+  trial=9 probe=2 cached_tokens=0/181 latency=0.3424s 
+  trial=9 probe=3 cached_tokens=0/181 latency=0.3735s MATCH
+  trial=10 probe=0 cached_tokens=0/181 latency=0.2193s MATCH
+  trial=10 probe=1 cached_tokens=0/181 latency=0.3500s 
+  trial=10 probe=2 cached_tokens=0/181 latency=0.3381s 
+  trial=10 probe=3 cached_tokens=0/181 latency=0.3529s 
+  trial=11 probe=0 cached_tokens=0/181 latency=0.2070s 
+  trial=11 probe=1 cached_tokens=0/181 latency=0.3291s 
+  trial=11 probe=2 cached_tokens=0/181 latency=0.2747s 
+  trial=11 probe=3 cached_tokens=0/181 latency=0.2831s MATCH
+  trial=12 probe=0 cached_tokens=0/181 latency=0.1668s 
+  trial=12 probe=1 cached_tokens=0/181 latency=0.2776s 
+  trial=12 probe=2 cached_tokens=0/181 latency=0.2791s MATCH
+  trial=12 probe=3 cached_tokens=0/181 latency=0.2939s 
+  trial=13 probe=0 cached_tokens=0/181 latency=0.1663s MATCH
+  trial=13 probe=1 cached_tokens=0/181 latency=0.2900s 
+  trial=13 probe=2 cached_tokens=0/181 latency=0.2781s 
+  trial=13 probe=3 cached_tokens=0/181 latency=0.2759s 
+  trial=14 probe=0 cached_tokens=0/181 latency=0.1701s 
+  trial=14 probe=1 cached_tokens=0/181 latency=0.2744s 
+  trial=14 probe=2 cached_tokens=0/181 latency=0.2788s 
+  trial=14 probe=3 cached_tokens=0/181 latency=0.2781s MATCH
+  trial=15 probe=0 cached_tokens=0/181 latency=0.1668s 
+  trial=15 probe=1 cached_tokens=0/181 latency=0.2833s MATCH
+  trial=15 probe=2 cached_tokens=0/181 latency=0.2796s 
+  trial=15 probe=3 cached_tokens=0/181 latency=0.2756s 
+  trial=16 probe=0 cached_tokens=0/181 latency=0.1707s 
+  trial=16 probe=1 cached_tokens=0/181 latency=0.2726s 
+  trial=16 probe=2 cached_tokens=0/181 latency=0.2839s 
+  trial=16 probe=3 cached_tokens=0/181 latency=0.2859s MATCH
+  trial=17 probe=0 cached_tokens=0/181 latency=0.1689s 
+  trial=17 probe=1 cached_tokens=0/181 latency=0.2846s 
+  trial=17 probe=2 cached_tokens=0/181 latency=0.2878s 
+  trial=17 probe=3 cached_tokens=0/181 latency=0.2672s MATCH
+  trial=18 probe=0 cached_tokens=0/181 latency=0.1634s MATCH
+  trial=18 probe=1 cached_tokens=0/181 latency=0.2812s 
+  trial=18 probe=2 cached_tokens=0/181 latency=0.2697s 
+  trial=18 probe=3 cached_tokens=0/181 latency=0.2742s 
+  trial=19 probe=0 cached_tokens=0/181 latency=0.1718s 
+  trial=19 probe=1 cached_tokens=0/181 latency=0.2720s 
+  trial=19 probe=2 cached_tokens=0/181 latency=0.2757s MATCH
+  trial=19 probe=3 cached_tokens=0/181 latency=0.2763s 
+  trial=20 probe=0 cached_tokens=0/181 latency=0.1672s 
+  trial=20 probe=1 cached_tokens=0/181 latency=0.2793s MATCH
+  trial=20 probe=2 cached_tokens=0/181 latency=0.2721s 
+  trial=20 probe=3 cached_tokens=0/181 latency=0.2737s 
+  trial=21 probe=0 cached_tokens=0/181 latency=0.1658s MATCH
+  trial=21 probe=1 cached_tokens=0/181 latency=0.2898s 
+  trial=21 probe=2 cached_tokens=0/181 latency=0.2846s 
+  trial=21 probe=3 cached_tokens=0/181 latency=0.2821s 
+  trial=22 probe=0 cached_tokens=0/181 latency=0.2081s 
+  trial=22 probe=1 cached_tokens=0/181 latency=0.3433s 
+  trial=22 probe=2 cached_tokens=0/181 latency=0.3383s 
+  trial=22 probe=3 cached_tokens=0/181 latency=0.3472s MATCH
+  trial=23 probe=0 cached_tokens=0/181 latency=0.2148s 
+  trial=23 probe=1 cached_tokens=0/181 latency=0.3380s 
+  trial=23 probe=2 cached_tokens=0/181 latency=0.2949s 
+  trial=23 probe=3 cached_tokens=0/181 latency=0.3460s MATCH
+  trial=24 probe=0 cached_tokens=0/181 latency=0.2222s MATCH
+  trial=24 probe=1 cached_tokens=0/181 latency=0.3291s 
+  trial=24 probe=2 cached_tokens=0/181 latency=0.3678s 
+  trial=24 probe=3 cached_tokens=0/181 latency=0.3380s 
+  trial=25 probe=0 cached_tokens=0/181 latency=0.2087s 
+  trial=25 probe=1 cached_tokens=0/181 latency=0.3471s MATCH
+  trial=25 probe=2 cached_tokens=0/181 latency=0.3368s 
+  trial=25 probe=3 cached_tokens=0/181 latency=0.3480s 
+  trial=26 probe=0 cached_tokens=0/181 latency=0.2188s 
+  trial=26 probe=1 cached_tokens=0/181 latency=0.3444s 
+  trial=26 probe=2 cached_tokens=0/181 latency=0.3470s 
+  trial=26 probe=3 cached_tokens=0/181 latency=0.3723s MATCH
+  trial=27 probe=0 cached_tokens=0/181 latency=0.2166s MATCH
+  trial=27 probe=1 cached_tokens=0/181 latency=0.3578s 
+  trial=27 probe=2 cached_tokens=0/181 latency=0.3472s 
+  trial=27 probe=3 cached_tokens=0/181 latency=0.3640s 
+  trial=28 probe=0 cached_tokens=0/181 latency=0.2017s 
+  trial=28 probe=1 cached_tokens=0/181 latency=0.3476s MATCH
+  trial=28 probe=2 cached_tokens=0/181 latency=0.3527s 
+  trial=28 probe=3 cached_tokens=0/181 latency=0.3330s 
+  trial=29 probe=0 cached_tokens=0/181 latency=0.2175s 
+  trial=29 probe=1 cached_tokens=0/181 latency=0.3427s 
+  trial=29 probe=2 cached_tokens=0/181 latency=0.3500s 
+  trial=29 probe=3 cached_tokens=0/181 latency=0.3517s MATCH
+
+Saved 120 rows to results/sglang/kv2/candidate_pin_disabled.csv
+exit: 0
+=== REAL: candidate_recovery_uuid ===
+  trial=0 probe=0 cached_tokens=0/209 latency=0.1986s 
+  trial=0 probe=1 cached_tokens=0/209 latency=0.3618s 
+  trial=0 probe=2 cached_tokens=0/206 latency=0.3515s 
+  trial=0 probe=3 cached_tokens=0/208 latency=0.3352s MATCH
+  trial=1 probe=0 cached_tokens=0/209 latency=0.2031s 
+  trial=1 probe=1 cached_tokens=0/209 latency=0.3488s MATCH
+  trial=1 probe=2 cached_tokens=0/206 latency=0.3427s 
+  trial=1 probe=3 cached_tokens=0/208 latency=0.3423s 
+  trial=2 probe=0 cached_tokens=0/209 latency=0.2049s 
+  trial=2 probe=1 cached_tokens=0/209 latency=0.3540s 
+  trial=2 probe=2 cached_tokens=0/206 latency=0.3486s MATCH
+  trial=2 probe=3 cached_tokens=0/208 latency=0.3445s 
+  trial=3 probe=0 cached_tokens=0/209 latency=0.1965s 
+  trial=3 probe=1 cached_tokens=0/209 latency=0.3542s 
+  trial=3 probe=2 cached_tokens=0/206 latency=0.3492s 
+  trial=3 probe=3 cached_tokens=0/208 latency=0.3368s MATCH
+  trial=4 probe=0 cached_tokens=0/209 latency=0.1969s MATCH
+  trial=4 probe=1 cached_tokens=0/209 latency=0.3548s 
+  trial=4 probe=2 cached_tokens=0/206 latency=0.3639s 
+  trial=4 probe=3 cached_tokens=0/208 latency=0.3512s 
+  trial=5 probe=0 cached_tokens=0/209 latency=0.2087s 
+  trial=5 probe=1 cached_tokens=0/209 latency=0.3579s 
+  trial=5 probe=2 cached_tokens=0/206 latency=0.3481s MATCH
+  trial=5 probe=3 cached_tokens=0/208 latency=0.3403s 
+  trial=6 probe=0 cached_tokens=0/209 latency=0.1941s 
+  trial=6 probe=1 cached_tokens=0/209 latency=0.3573s MATCH
+  trial=6 probe=2 cached_tokens=0/206 latency=0.3324s 
+  trial=6 probe=3 cached_tokens=0/208 latency=0.3628s 
+  trial=7 probe=0 cached_tokens=0/209 latency=0.1984s 
+  trial=7 probe=1 cached_tokens=0/209 latency=0.3535s MATCH
+  trial=7 probe=2 cached_tokens=0/206 latency=0.3694s 
+  trial=7 probe=3 cached_tokens=0/208 latency=0.3318s 
+  trial=8 probe=0 cached_tokens=0/209 latency=0.2178s 
+  trial=8 probe=1 cached_tokens=0/209 latency=0.3368s 
+  trial=8 probe=2 cached_tokens=0/206 latency=0.3418s MATCH
+  trial=8 probe=3 cached_tokens=0/208 latency=0.3501s 
+  trial=9 probe=0 cached_tokens=0/209 latency=0.2150s 
+  trial=9 probe=1 cached_tokens=0/209 latency=0.3403s 
+  trial=9 probe=2 cached_tokens=0/206 latency=0.3438s MATCH
+  trial=9 probe=3 cached_tokens=0/208 latency=0.3701s 
+  trial=10 probe=0 cached_tokens=0/209 latency=0.1907s MATCH
+  trial=10 probe=1 cached_tokens=0/209 latency=0.3675s 
+  trial=10 probe=2 cached_tokens=0/206 latency=0.3473s 
+  trial=10 probe=3 cached_tokens=0/208 latency=0.3413s 
+  trial=11 probe=0 cached_tokens=0/209 latency=0.2043s MATCH
+  trial=11 probe=1 cached_tokens=0/209 latency=0.3568s 
+  trial=11 probe=2 cached_tokens=0/206 latency=0.3352s 
+  trial=11 probe=3 cached_tokens=0/208 latency=0.3465s 
+  trial=12 probe=0 cached_tokens=0/209 latency=0.2196s 
+  trial=12 probe=1 cached_tokens=0/209 latency=0.3482s 
+  trial=12 probe=2 cached_tokens=0/206 latency=0.3413s 
+  trial=12 probe=3 cached_tokens=0/208 latency=0.3739s MATCH
+  trial=13 probe=0 cached_tokens=0/209 latency=0.2327s 
+  trial=13 probe=1 cached_tokens=0/209 latency=0.3356s 
+  trial=13 probe=2 cached_tokens=0/206 latency=0.3544s 
+  trial=13 probe=3 cached_tokens=0/208 latency=0.3507s MATCH
+  trial=14 probe=0 cached_tokens=0/209 latency=0.2017s 
+  trial=14 probe=1 cached_tokens=0/209 latency=0.3722s 
+  trial=14 probe=2 cached_tokens=0/206 latency=0.4129s 
+  trial=14 probe=3 cached_tokens=0/208 latency=0.4088s MATCH
+  trial=15 probe=0 cached_tokens=0/209 latency=0.2479s 
+  trial=15 probe=1 cached_tokens=0/209 latency=0.4572s MATCH
+  trial=15 probe=2 cached_tokens=0/206 latency=0.3884s 
+  trial=15 probe=3 cached_tokens=0/208 latency=0.4176s 
+  trial=16 probe=0 cached_tokens=0/209 latency=0.2544s 
+  trial=16 probe=1 cached_tokens=0/209 latency=0.4062s MATCH
+  trial=16 probe=2 cached_tokens=0/206 latency=0.4138s 
+  trial=16 probe=3 cached_tokens=0/208 latency=0.4494s 
+  trial=17 probe=0 cached_tokens=0/209 latency=0.2652s 
+  trial=17 probe=1 cached_tokens=0/209 latency=0.4132s 
+  trial=17 probe=2 cached_tokens=0/206 latency=0.4429s MATCH
+  trial=17 probe=3 cached_tokens=0/208 latency=0.4065s 
+  trial=18 probe=0 cached_tokens=0/209 latency=0.2610s MATCH
+  trial=18 probe=1 cached_tokens=0/209 latency=0.4388s 
+  trial=18 probe=2 cached_tokens=0/206 latency=0.3939s 
+  trial=18 probe=3 cached_tokens=0/208 latency=0.4362s 
+  trial=19 probe=0 cached_tokens=0/209 latency=0.2369s MATCH
+  trial=19 probe=1 cached_tokens=0/209 latency=0.4366s 
+  trial=19 probe=2 cached_tokens=0/206 latency=0.4135s 
+  trial=19 probe=3 cached_tokens=0/208 latency=0.3997s 
+  trial=20 probe=0 cached_tokens=0/209 latency=0.2363s 
+  trial=20 probe=1 cached_tokens=0/209 latency=0.3661s 
+  trial=20 probe=2 cached_tokens=0/206 latency=0.4223s 
+  trial=20 probe=3 cached_tokens=0/208 latency=0.4067s MATCH
+  trial=21 probe=0 cached_tokens=0/209 latency=0.2544s MATCH
+  trial=21 probe=1 cached_tokens=0/209 latency=0.4291s 
+  trial=21 probe=2 cached_tokens=0/206 latency=0.4258s 
+  trial=21 probe=3 cached_tokens=0/208 latency=0.3912s 
+  trial=22 probe=0 cached_tokens=0/209 latency=0.2275s MATCH
+  trial=22 probe=1 cached_tokens=0/209 latency=0.4379s 
+  trial=22 probe=2 cached_tokens=0/206 latency=0.4093s 
+  trial=22 probe=3 cached_tokens=0/208 latency=0.4136s 
+  trial=23 probe=0 cached_tokens=0/209 latency=0.2702s 
+  trial=23 probe=1 cached_tokens=0/209 latency=0.4170s MATCH
+  trial=23 probe=2 cached_tokens=0/206 latency=0.3963s 
+  trial=23 probe=3 cached_tokens=0/208 latency=0.4380s 
+  trial=24 probe=0 cached_tokens=0/209 latency=0.2487s 
+  trial=24 probe=1 cached_tokens=0/209 latency=0.4168s 
+  trial=24 probe=2 cached_tokens=0/206 latency=0.4025s MATCH
+  trial=24 probe=3 cached_tokens=0/208 latency=0.4424s 
+  trial=25 probe=0 cached_tokens=0/209 latency=0.2501s 
+  trial=25 probe=1 cached_tokens=0/209 latency=0.4362s 
+  trial=25 probe=2 cached_tokens=0/206 latency=0.4082s 
+  trial=25 probe=3 cached_tokens=0/208 latency=0.3963s MATCH
+  trial=26 probe=0 cached_tokens=0/209 latency=0.2485s 
+  trial=26 probe=1 cached_tokens=0/209 latency=0.4289s MATCH
+  trial=26 probe=2 cached_tokens=0/206 latency=0.4191s 
+  trial=26 probe=3 cached_tokens=0/208 latency=0.4154s 
+  trial=27 probe=0 cached_tokens=0/209 latency=0.2483s MATCH
+  trial=27 probe=1 cached_tokens=0/209 latency=0.5150s 
+  trial=27 probe=2 cached_tokens=0/206 latency=0.4818s 
+  trial=27 probe=3 cached_tokens=0/208 latency=0.4533s 
+  trial=28 probe=0 cached_tokens=0/209 latency=0.3206s 
+  trial=28 probe=1 cached_tokens=0/209 latency=0.4665s 
+  trial=28 probe=2 cached_tokens=0/206 latency=0.4834s MATCH
+  trial=28 probe=3 cached_tokens=0/208 latency=0.5173s 
+  trial=29 probe=0 cached_tokens=0/209 latency=0.3290s MATCH
+  trial=29 probe=1 cached_tokens=0/209 latency=0.4736s 
+  trial=29 probe=2 cached_tokens=0/206 latency=0.4681s 
+  trial=29 probe=3 cached_tokens=0/208 latency=0.5187s 
+
+Saved 120 rows to results/sglang/kv2/candidate_uuid_disabled.csv
+exit: 0

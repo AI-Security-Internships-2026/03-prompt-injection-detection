@@ -1,0 +1,10 @@
+{
+  "description": "Manual demonstration: full PIN reconstruction via genuinely separate two-application architecture (victim_app:8001, attacker_app:8002), both calling shared SGLang backend:30000",
+  "victim_secret_pin": "482913",
+  "recovered_pin": "482913",
+  "full_match": true,
+  "method": "sequential per-position chained recovery via /detect_pin, reusing validated methodology from run_pin_chained_recovery.py",
+  "bug_found_and_fixed": "PLACEHOLDER_DIGIT was '0', same as a valid guess digit, causing guess '0' to spuriously win at every position after position 1 due to indistinguishable prompt construction. Fixed by changing placeholder to non-digit 'X'.",
+  "architecture_notes": "victim_app.py and attacker_app.py are separate FastAPI processes with independent login/session state. attacker_app.py has zero import of, or reference to, victim_app.py or any secret value - confirmed via grep audit.",
+  "caveat": "This is a single manual trial, not a statistically powered experiment (existing run_pin_chained_recovery.py provides N=30 trial statistics for the underlying method). This result demonstrates the architecture works end-to-end with genuine process separation."
+}

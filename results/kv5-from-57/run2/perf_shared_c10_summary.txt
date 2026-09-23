@@ -1,0 +1,2 @@
+mode=shared concurrency=10 total_requests=0
+elapsed_s=0.05 throughput_req_s=0.00

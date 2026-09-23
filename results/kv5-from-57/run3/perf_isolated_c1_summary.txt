@@ -1,0 +1,4 @@
+mode=tenant-isolated concurrency=1 total_requests=20
+elapsed_s=4.80 throughput_req_s=4.16
+p50_ms=243.33 p95_ms=266.52 p99_ms=266.52
+cache_hit_rate=0.85

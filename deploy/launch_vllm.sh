@@ -1,5 +1,5 @@
 #!/bin/bash
-MODEL="deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+MODEL="${MODEL:-deepseek-ai/DeepSeek-R1-Distill-Llama-8B}"
 BLOCK_SIZE=16
 
 python -m vllm.entrypoints.openai.api_server \
