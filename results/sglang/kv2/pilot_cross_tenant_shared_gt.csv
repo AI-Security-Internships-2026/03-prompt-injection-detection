@@ -1,0 +1,3 @@
+wall_clock_latency,server_e2e_latency,prompt_tokens,cached_tokens,cached_tokens_device,cached_tokens_host,completion_tokens,request_id,prompt_char_len,trial
+0.10804620292037725,0.10426778625696898,196,0,,,1,c06b6ae0b89a403abea64a43f33fc0f1,1149,0
+0.10535317100584507,0.10178867727518082,196,0,,,1,c80d92e97db64d2eb0092310ff19f44c,1149,1

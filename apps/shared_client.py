@@ -7,8 +7,8 @@ independently; neither imports from the other.
 import time
 import requests
 
-SGLANG_GENERATE_URL = "http://localhost:30001/generate"
-SGLANG_FLUSH_URL = "http://localhost:30001/flush_cache"
+SGLANG_GENERATE_URL = "http://localhost:30010/generate"
+SGLANG_FLUSH_URL = "http://localhost:30010/flush_cache"
 
 def send_to_sglang(prompt: str, max_new_tokens: int = 1, temperature: float = 0.0, timeout: float = 60.0, cache_salt: str = None) -> dict:
     payload = {
@@ -38,3 +38,14 @@ def flush_cache() -> str:
     r = requests.post(SGLANG_FLUSH_URL, timeout=10)
     r.raise_for_status()
     return r.text.strip()
+
+CACHE_MODES = {"shared", "tenant-isolated", "cache-disabled"}
+
+def resolve_salt(cache_mode: str, tenant_id: str, run_id: str) -> str | None:
+    if cache_mode not in CACHE_MODES:
+        raise ValueError(f"unknown cache mode {cache_mode!r}, expected one of {CACHE_MODES}")
+    if cache_mode == "shared":
+        return None
+    if cache_mode == "cache-disabled":
+        return None  # isolation happens via server --disable-radix-cache, not client salt
+    return f"{tenant_id}-{run_id}"  # tenant-isolated
