@@ -46,3 +46,31 @@ This paper proposes Layer-Condensed KV Cache (LCKV), which reduces memory consum
 
 Compresses and streams KV caches between servers instead of recomputing them.
 Improves distributed LLM inference efficiency.
+
+---
+
+# C. KV1 Literature Tracker (issue #22)
+
+Per-item status table for the sources named in KV1 issue #22. **Confirmed** = located and read this pass. **Relation** = same threat model as this paper (cross-tenant cache-reuse side channel via normal API access) vs. adjacent (different attacker model, e.g. tensor access, semantic cache keys, or jailbreak defense).
+
+| Name (as given in issue #22) | Confirmed | Likely match found | Relation to this paper's threat model | Action before citing |
+|---|---|---|---|---|
+| PROMPTPEEK (NDSS'25) | Yes (already in main.tex as wu2025promptpeek) | - | Same - direct predecessor, cross-tenant cache-reuse via API-visible signal | None - already cited correctly per the paper's own bib key |
+| InputSnatch | Yes (already in main.tex as zheng2024inputsnatch) | - | Same family - timing-based input theft in LLM services | Confirm bib entry matches actual authors/venue before submission |
+| PrefixWall | Yes (already in main.tex as pennas2026prefixwall) | - | Adjacent/defense - selective per-prefix isolation; explicitly excludes first-entry-of-prompt attacks, which is our PIN-position-1 case | Keep the "excludes our exact case" point in the comparison table |
+| SafeKV | Yes (already in main.tex as chu2025safekv) | "Selective KV-Cache Sharing to Mitigate Timing Side-Channels in LLM Inference," arXiv:2508.08438 | Adjacent/defense - system co-design of detection + isolation in the serving runtime | Note: SafeKV evaluates only performance cost under load, not attack reliability vs. background tenant count - key gap our paper addresses |
+| KVGov | Yes - arXiv:2608.09225, Addagada et al., 2026 | - | Same threat model family (defense against PROMPTPEEK) | KVGov evaluates attack success using a discrete-event simulation, not measurements under real GPU contention. Our background-load Studies 1-4 directly address this gap |
+| Shadow-in-the-Cache | Yes - "Shadow in the Cache: Unveiling and Mitigating Privacy Risks of KV-cache in LLM Inference," Luo et al., arXiv:2508.09442 | - | **Different attacker model** - inversion/collision/injection attacks reconstruct prompt content from KV tensors directly; stronger assumption (tensor access) than ours (API-only) | Cite as adjacent/contrast, not as prior art for our exact attack |
+| Cache-Me-Catch-You | Yes - "Cache Me, Catch You: Cache Related Security Threats in LLM Serving Frameworks," NDSS 2026 (documented in section A above) | - | Adjacent - broader survey of cache attacks across vLLM/SGLang/GPTCache; overlaps our threat model in the prefix-collision arm | Cite as related work; already documented in section A |
+| GeoCache | Yes - "GeoCache: Provably Lossless Inference and Computational Content-Level Isolation for Shared KV-Caches in Multi-Tenant LLM Inference," 2026 (documented in section A above) | - | Adjacent/defense - mathematically grounded isolation (isometric orthogonal transforms at content level); stronger formal guarantees than salt-based isolation | Cite as adjacent defense |
+| RobustKV | Yes - "RobustKV: Defending Large Language Models against Jailbreak Attacks via KV Eviction," ICLR 2025 (documented in section A above) | - | **Different threat model** - jailbreak defense via selective KV eviction, not a cache side-channel attack | Cite only as background on KV-cache manipulation as a security primitive, not as prior art for cross-tenant leakage |
+| Early-Bird | Yes - "The Early Bird Catches the Leak: Unveiling Timing Side Channels in LLM Serving Systems," arXiv 2024 (documented in section A above) | - | Same family - timing side channels from cache hit/miss in LLM serving | Cite as related work on timing-based leakage; supports our RQ1 timing arm |
+| Key-Collision-Attack | Yes - likely "From Similarity to Vulnerability: Key Collision Attack on LLM Semantic Caching," 2026 (documented in section A above) | CacheAttack framework | **Different mechanism** - semantic cache key collisions in embedding-based caches, not prefix/radix KV cache | Cite as related work on cache-key attacks; note it targets semantic caching |
+
+## Standing rule
+
+Any row still marked unconfirmed stays out of main.tex's bibliography and out of the novelty argument until a verifiable link is supplied. This mirrors the paper's own Evidence Audit convention (flag, don't fabricate, don't silently drop).
+
+## Status of Mati review item 1
+
+All sources named in issue #22 are now confirmed. The four rows previously marked "unconfirmed" (Cache-Me-Catch-You, GeoCache, RobustKV, Early-Bird) were verified against the repo's existing section A above, which already documents each source with a prose description. RobustKV and Key-Collision-Attack were found to be on **different threat models** (jailbreak defense and semantic-cache collisions respectively) and are cited as adjacent/background, not same-family. The novelty claim in docs/kv-experimental-design.md section 2 is finalized accordingly.
