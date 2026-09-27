@@ -1,0 +1,30 @@
+{
+  "run_id": "candidate_pin_shared_qwen",
+  "cache_mode": "shared-cache",
+  "framework": "sglang",
+  "framework_version": "0.5.17",
+  "model_id": "Qwen/Qwen2.5-7B-Instruct",
+  "server_launch_flags": "--mem-fraction-static 0.55 --disable-cuda-graph --context-length 4096",
+  "victim_tenant_id": "tenant_victim",
+  "attacker_tenant_id": "tenant_attacker",
+  "script_name": "experiments/sglang/run_candidate_recovery_pin.py",
+  "timestamp_utc": "2026-09-16T18:43:04Z",
+  "attack_params": {
+    "n_trials": 30,
+    "pin_length": 6,
+    "seed": null
+  },
+  "git_sha": "68aa2213a752232a2753a55b4d185ea8f71b8028",
+  "source_csv": "results/sglang/kv2/candidate_pin_shared_qwen.csv",
+  "inferred_fields": {
+    "cache_mode": false,
+    "model_id": false,
+    "script_name": true,
+    "timestamp_utc": false,
+    "git_sha": true,
+    "attack_params": true,
+    "framework_version": true,
+    "server_launch_flags": true
+  },
+  "note": "Backfilled by experiments/sglang/backfill_metadata.py. Fields marked inferred=true in inferred_fields are reconstructed from filename convention, file mtime, git history, or documented constants. Future runs capture live via run_metadata.py."
+}
