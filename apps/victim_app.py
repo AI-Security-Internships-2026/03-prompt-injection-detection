@@ -3,6 +3,10 @@ victim_app.py — "Finance Assistant" (Tenant A / User A)
 Port 8001. Secret lives only in this process's memory, keyed by session.
 """
 import sys, os, secrets
+from apps.shared_client import resolve_salt
+import os, uuid
+CACHE_MODE = os.environ.get("CACHE_MODE", "shared")
+RUN_ID = os.environ.get("RUN_ID", uuid.uuid4().hex[:8])
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "experiments", "sglang"))
 
@@ -63,7 +67,7 @@ def submit_secret(req: SubmitRequest, authorization: Optional[str] = Header(None
 
     formatted = format_secret_for_cache(req.secret)
     prompt = SHARED_PUBLIC_PREFIX + formatted
-    result = send_to_sglang(prompt, cache_salt="tenant_victim")
+    result = send_to_sglang(prompt, cache_salt=resolve_salt(CACHE_MODE, "victim", RUN_ID))
     return {"accepted": True, "prompt_tokens": result["prompt_tokens"]}
 
 @app.post("/flush")

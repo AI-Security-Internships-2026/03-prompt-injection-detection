@@ -71,3 +71,31 @@ Related M0 notes:
 - Final journal experiments must be rerun from stabilized, explicit configurations before manuscript numbers are frozen.
 - Negative findings are preserved as research evidence.
 - The repository is proceeding with exactly two journal tracks: KV-cache security and HardenedGuard / prompt-injection canonicalization.
+
+---
+
+## KV2 stabilized-rerun update (2026-09-27)
+
+The KV-cache journal rows above were originally marked `VERIFIED-HISTORICAL` because
+the preserved two-app code hard-coded distinct tenant salts, preventing reproduction of
+shared-cache leakage from the same codebase. That gap is now closed.
+
+**KV2 (issue #23) rerun status:**
+
+| Row above | Original status | KV2 status | Evidence |
+|---|---|---|---|
+| SGLang cross-tenant cache leakage | `VERIFIED-HISTORICAL` | `VERIFIED` | `results/sglang/kv2/cross_tenant_{shared,isolated,disabled}.csv` |
+| SGLang candidate identification | `VERIFIED-HISTORICAL` | `VERIFIED` | `results/sglang/kv2/candidate_*_{shared,isolated,disabled}.csv` |
+| Chained PIN reconstruction | `VERIFIED-HISTORICAL` | `VERIFIED` | `results/sglang/kv2/pin_chained_{shared,isolated,disabled}.csv`; 30/30 reproduced |
+| Tenant isolation / salting | `VERIFIED-HISTORICAL` | `VERIFIED` | `results/sglang/kv2/candidate_*_isolated.csv`, `pin_chained_isolated.csv` |
+| Cache-disabled control | `VERIFIED` | `VERIFIED` | `results/sglang/kv2/cross_tenant_disabled.csv`, `pin_chained_disabled.csv` |
+| Legitimate-traffic comparison | `VERIFIED-HISTORICAL` | `VERIFIED` | `results/sglang/mitigation/perf_*.csv` (KV2 metadata sidecars present) |
+
+**Reproducibility metadata:** Every CSV in `results/sglang/kv2/` has an associated
+`<name>.csv.metadata.json` sidecar and a single `run_metadata.csv` index. See
+`docs/kv2-reconciliation.md` §"Metadata provenance" for the backfill caveats.
+
+**Rerun conditions:** All KV2 reruns used SGLang 0.5.17 with launch flags
+`--mem-fraction-static 0.55 --disable-cuda-graph --context-length 4096`; cache mode
+selected via `--cache-mode {shared,tenant-isolated,cache-disabled}`; salt via
+`apps.shared_client.resolve_salt(cache_mode, tenant_id, run_id)`.

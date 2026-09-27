@@ -72,3 +72,10 @@ PIN_SEPARATOR = ","
 
 # --- Level 3 fix: trailing marker so last digit is never the literal end of prompt ---
 PIN_TRAILING_MARKER = "."
+
+CACHE_MODES = {"shared", "tenant-isolated", "cache-disabled"}
+
+def resolve_cache_mode(mode: str) -> str:
+    if mode not in CACHE_MODES:
+        raise ValueError(f"unknown cache mode {mode!r}, expected one of {CACHE_MODES}")
+    return mode
