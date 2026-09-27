@@ -1,0 +1,12 @@
+lcp_thresh=0.7 mut_thresh=0.0 | TP=0 FP=10 TN=20 FN=2197 precision=0.000 recall=0.000 f1=nan fpr=0.333
+lcp_thresh=0.7 mut_thresh=0.1 | TP=0 FP=10 TN=20 FN=2197 precision=0.000 recall=0.000 f1=nan fpr=0.333
+lcp_thresh=0.7 mut_thresh=0.3 | TP=0 FP=10 TN=20 FN=2197 precision=0.000 recall=0.000 f1=nan fpr=0.333
+lcp_thresh=0.8 mut_thresh=0.0 | TP=0 FP=5 TN=25 FN=2197 precision=0.000 recall=0.000 f1=nan fpr=0.167
+lcp_thresh=0.8 mut_thresh=0.1 | TP=0 FP=5 TN=25 FN=2197 precision=0.000 recall=0.000 f1=nan fpr=0.167
+lcp_thresh=0.8 mut_thresh=0.3 | TP=0 FP=5 TN=25 FN=2197 precision=0.000 recall=0.000 f1=nan fpr=0.167
+lcp_thresh=0.9 mut_thresh=0.0 | TP=0 FP=5 TN=25 FN=2197 precision=0.000 recall=0.000 f1=nan fpr=0.167
+lcp_thresh=0.9 mut_thresh=0.1 | TP=0 FP=5 TN=25 FN=2197 precision=0.000 recall=0.000 f1=nan fpr=0.167
+lcp_thresh=0.9 mut_thresh=0.3 | TP=0 FP=5 TN=25 FN=2197 precision=0.000 recall=0.000 f1=nan fpr=0.167
+lcp_thresh=0.95 mut_thresh=0.0 | TP=0 FP=5 TN=25 FN=2197 precision=0.000 recall=0.000 f1=nan fpr=0.167
+lcp_thresh=0.95 mut_thresh=0.1 | TP=0 FP=5 TN=25 FN=2197 precision=0.000 recall=0.000 f1=nan fpr=0.167
+lcp_thresh=0.95 mut_thresh=0.3 | TP=0 FP=5 TN=25 FN=2197 precision=0.000 recall=0.000 f1=nan fpr=0.167

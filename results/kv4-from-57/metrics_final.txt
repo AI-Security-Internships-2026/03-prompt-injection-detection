@@ -1,0 +1,182 @@
+=== ../../results/kv4/adaptive_v2/adaptive_adaptive_benign-mix.csv ===
+  n_trials: 30
+  exact_match_rate: 0.0000
+  overall_digit_accuracy: 0.3389
+  mean_queries_per_trial: 60.00
+  latency_mean_ms: 256.59
+  latency_std_ms: 80.18
+  failure cases (trial, ground_truth, inferred):
+    trial=0 gt=024582 inferred=847543
+    trial=1 gt=530919 inferred=560424
+    trial=2 gt=379537 inferred=386137
+    trial=3 gt=068289 inferred=068489
+    trial=4 gt=727725 inferred=727129
+
+=== ../../results/kv4/adaptive_v2/adaptive_adaptive_delay.csv ===
+  n_trials: 30
+  exact_match_rate: 0.0000
+  overall_digit_accuracy: 0.3167
+  mean_queries_per_trial: 60.00
+  latency_mean_ms: 161.49
+  latency_std_ms: 78.56
+  failure cases (trial, ground_truth, inferred):
+    trial=0 gt=001889 inferred=671885
+    trial=1 gt=610092 inferred=553692
+    trial=2 gt=519106 inferred=919112
+    trial=3 gt=886601 inferred=883639
+    trial=4 gt=388358 inferred=078254
+
+=== ../../results/kv4/adaptive_v2/adaptive_adaptive_none.csv ===
+  n_trials: 30
+  exact_match_rate: 0.0000
+  overall_digit_accuracy: 0.2889
+  mean_queries_per_trial: 60.00
+  latency_mean_ms: 264.90
+  latency_std_ms: 79.29
+  failure cases (trial, ground_truth, inferred):
+    trial=0 gt=601650 inferred=301627
+    trial=1 gt=064434 inferred=054845
+    trial=2 gt=331445 inferred=384394
+    trial=3 gt=562003 inferred=558014
+    trial=4 gt=783436 inferred=762463
+
+=== ../../results/kv4/adaptive_v2/adaptive_adaptive_rate-limit.csv ===
+  n_trials: 30
+  exact_match_rate: 0.0000
+  overall_digit_accuracy: 0.2778
+  mean_queries_per_trial: 60.00
+  latency_mean_ms: 161.84
+  latency_std_ms: 79.60
+  failure cases (trial, ground_truth, inferred):
+    trial=0 gt=004098 inferred=542449
+    trial=1 gt=323903 inferred=358637
+    trial=2 gt=261955 inferred=266957
+    trial=3 gt=087909 inferred=227707
+    trial=4 gt=975653 inferred=846830
+
+=== ../../results/kv4/adaptive_v2/adaptive_fixed_benign-mix.csv ===
+  n_trials: 30
+  exact_match_rate: 0.0000
+  overall_digit_accuracy: 0.0667
+  mean_queries_per_trial: 60.00
+  latency_mean_ms: 244.42
+  latency_std_ms: 25.05
+  failure cases (trial, ground_truth, inferred):
+    trial=0 gt=174071 inferred=214056
+    trial=1 gt=480364 inferred=478133
+    trial=2 gt=912701 inferred=546846
+    trial=3 gt=050250 inferred=436148
+    trial=4 gt=591938 inferred=979692
+
+=== ../../results/kv4/adaptive_v2/adaptive_fixed_delay.csv ===
+  n_trials: 30
+  exact_match_rate: 0.0000
+  overall_digit_accuracy: 0.0889
+  mean_queries_per_trial: 60.00
+  latency_mean_ms: 152.20
+  latency_std_ms: 35.33
+  failure cases (trial, ground_truth, inferred):
+    trial=0 gt=908706 inferred=694187
+    trial=1 gt=519720 inferred=874595
+    trial=2 gt=515301 inferred=192772
+    trial=3 gt=775172 inferred=342126
+    trial=4 gt=627812 inferred=418341
+
+=== ../../results/kv4/adaptive_v2/adaptive_fixed_none.csv ===
+  n_trials: 30
+  exact_match_rate: 0.0000
+  overall_digit_accuracy: 0.0944
+  mean_queries_per_trial: 60.00
+  latency_mean_ms: 247.81
+  latency_std_ms: 20.49
+  failure cases (trial, ground_truth, inferred):
+    trial=0 gt=936521 inferred=260837
+    trial=1 gt=027864 inferred=466881
+    trial=2 gt=709017 inferred=814739
+    trial=3 gt=159753 inferred=306332
+    trial=4 gt=440996 inferred=771139
+
+=== ../../results/kv4/adaptive_v2/adaptive_fixed_rate-limit.csv ===
+  n_trials: 30
+  exact_match_rate: 0.0000
+  overall_digit_accuracy: 0.0389
+  mean_queries_per_trial: 60.00
+  latency_mean_ms: 143.57
+  latency_std_ms: 12.94
+  failure cases (trial, ground_truth, inferred):
+    trial=0 gt=775673 inferred=620902
+    trial=1 gt=871480 inferred=612649
+    trial=2 gt=985552 inferred=269049
+    trial=3 gt=183964 inferred=045173
+    trial=4 gt=457316 inferred=693069
+
+=== ../../results/kv4/adaptive_v2/adaptive_random_benign-mix.csv ===
+  n_trials: 30
+  exact_match_rate: 0.0000
+  overall_digit_accuracy: 0.2111
+  mean_queries_per_trial: 60.00
+  latency_mean_ms: 256.80
+  latency_std_ms: 71.41
+  failure cases (trial, ground_truth, inferred):
+    trial=0 gt=441112 inferred=116615
+    trial=1 gt=017252 inferred=959659
+    trial=2 gt=289411 inferred=044303
+    trial=3 gt=794614 inferred=566149
+    trial=4 gt=199006 inferred=592879
+
+=== ../../results/kv4/adaptive_v2/adaptive_random_delay.csv ===
+  n_trials: 30
+  exact_match_rate: 0.0000
+  overall_digit_accuracy: 0.0556
+  mean_queries_per_trial: 60.00
+  latency_mean_ms: 143.43
+  latency_std_ms: 12.90
+  failure cases (trial, ground_truth, inferred):
+    trial=0 gt=766737 inferred=897383
+    trial=1 gt=436081 inferred=572389
+    trial=2 gt=382930 inferred=073849
+    trial=3 gt=291395 inferred=450319
+    trial=4 gt=384582 inferred=818723
+
+=== ../../results/kv4/adaptive_v2/adaptive_random_none.csv ===
+  n_trials: 30
+  exact_match_rate: 0.0000
+  overall_digit_accuracy: 0.0556
+  mean_queries_per_trial: 60.00
+  latency_mean_ms: 245.20
+  latency_std_ms: 23.74
+  failure cases (trial, ground_truth, inferred):
+    trial=0 gt=532945 inferred=383787
+    trial=1 gt=982550 inferred=724967
+    trial=2 gt=834530 inferred=295497
+    trial=3 gt=169236 inferred=605778
+    trial=4 gt=501052 inferred=813554
+
+=== ../../results/kv4/adaptive_v2/adaptive_random_rate-limit.csv ===
+  n_trials: 30
+  exact_match_rate: 0.0000
+  overall_digit_accuracy: 0.2500
+  mean_queries_per_trial: 60.00
+  latency_mean_ms: 161.07
+  latency_std_ms: 77.29
+  failure cases (trial, ground_truth, inferred):
+    trial=0 gt=856744 inferred=818135
+    trial=1 gt=977367 inferred=987547
+    trial=2 gt=019940 inferred=009926
+    trial=3 gt=058450 inferred=030305
+    trial=4 gt=400857 inferred=126352
+
+=== ../../results/sglang/kv2/level3_shared_qwen_v2.csv ===
+  n_trials: 30
+  exact_match_rate: 0.0000
+  overall_digit_accuracy: 0.0111
+  mean_queries_per_trial: 60.00
+  latency_mean_ms: 151.51
+  latency_std_ms: 2.00
+  failure cases (trial, ground_truth, inferred):
+    trial=0 gt=137978 inferred=984632
+    trial=1 gt=745382 inferred=006166
+    trial=2 gt=029429 inferred=254382
+    trial=3 gt=635130 inferred=343041
+    trial=4 gt=218893 inferred=129338
+
