@@ -1,0 +1,30 @@
+{
+  "run_id": "pilot_candidate_full",
+  "cache_mode": "unknown",
+  "framework": "sglang",
+  "framework_version": "0.5.17",
+  "model_id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "server_launch_flags": "--mem-fraction-static 0.55 --disable-cuda-graph --context-length 4096",
+  "victim_tenant_id": "tenant_victim",
+  "attacker_tenant_id": "tenant_attacker",
+  "script_name": "unknown",
+  "timestamp_utc": "2026-09-09T13:14:40Z",
+  "attack_params": {
+    "n_trials": 30,
+    "pin_length": 6,
+    "seed": null
+  },
+  "git_sha": "b9b3454af6cc50d2ee037849ab13bd26c292c67d",
+  "source_csv": "results/sglang/kv2/pilot_candidate_full.csv",
+  "inferred_fields": {
+    "cache_mode": true,
+    "model_id": true,
+    "script_name": true,
+    "timestamp_utc": false,
+    "git_sha": true,
+    "attack_params": true,
+    "framework_version": true,
+    "server_launch_flags": true
+  },
+  "note": "Backfilled by experiments/sglang/backfill_metadata.py. Fields marked inferred=true in inferred_fields are reconstructed from filename convention, file mtime, git history, or documented constants. Future runs capture live via run_metadata.py."
+}

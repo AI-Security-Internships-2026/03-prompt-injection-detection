@@ -1,0 +1,14 @@
+framework,cache_mode,conditions,n_rows,source_file
+vllm,disabled,A_no_victim=82.652;B_after_victim_correct=72.528;B_after_victim_wrong=71.997,90,results\phase4\kv3\cross_tenant_vllm_disabled_high_entropy.csv
+vllm,disabled,A_no_victim=80.727;B_after_victim_correct=70.414;B_after_victim_wrong=70.392,90,results\phase4\kv3\cross_tenant_vllm_disabled_low_entropy.csv
+vllm,disabled,A_no_victim=81.515;B_after_victim_correct=71.853;B_after_victim_wrong=71.512,90,results\phase4\kv3\cross_tenant_vllm_disabled_predictable_prefix.csv
+vllm,disabled,A_no_victim=81.575;B_after_victim_correct=71.820;B_after_victim_wrong=71.415,90,results\phase4\kv3\cross_tenant_vllm_disabled_structured.csv
+vllm,shared,A_no_victim=95.896;B_after_victim_correct=70.298;B_after_victim_wrong=69.715,90,results\phase4\kv3\cross_tenant_vllm_shared_high_entropy.csv
+vllm,shared,A_no_victim=89.771;B_after_victim_correct=69.293;B_after_victim_wrong=69.239,90,results\phase4\kv3\cross_tenant_vllm_shared_low_entropy.csv
+vllm,shared,A_no_victim=91.966;B_after_victim_correct=69.680;B_after_victim_wrong=69.069,90,results\phase4\kv3\cross_tenant_vllm_shared_predictable_prefix.csv
+vllm,shared,A_no_victim=90.738;B_after_victim_correct=69.966;B_after_victim_wrong=69.229,90,results\phase4\kv3\cross_tenant_vllm_shared_structured.csv
+sglang,disabled,A_no_victim=0.107;B_after_victim=0.160,30,results\sglang\kv2\cross_tenant_disabled.csv
+sglang,isolated,A_no_victim=0.139;B_after_victim=0.220,30,results\sglang\kv2\cross_tenant_isolated.csv
+sglang,shared,A_no_victim=0.103;B_after_victim=0.147,30,results\sglang\kv2\cross_tenant_shared.csv
+sglang,disabled,A_no_victim=0.173;B_after_victim=0.274,30,results\sglang\kv2\pilot_cross_tenant_disabled.csv
+sglang,shared,A_no_victim=0.105;B_after_victim=0.147,4,results\sglang\kv2\pilot_cross_tenant_shared.csv
