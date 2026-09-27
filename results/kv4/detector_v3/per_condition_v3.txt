@@ -1,0 +1,21 @@
+# Per-condition detector metrics (KV4 item 3)
+# Threshold: lcp>=0.1 mut>0.0   window=10
+# variant | attack_windows | TP | FN | precision | recall | f1 | fpr
+adaptive_adaptive_benign-mix | 183 | 175 | 8 | 0.946 | 0.956 | 0.951 | 0.333
+adaptive_adaptive_delay | 183 | 183 | 0 | 0.948 | 1.000 | 0.973 | 0.333
+adaptive_adaptive_none | 183 | 183 | 0 | 0.948 | 1.000 | 0.973 | 0.333
+adaptive_adaptive_rate-limit | 183 | 183 | 0 | 0.948 | 1.000 | 0.973 | 0.333
+fixed/benign-mix | 184 | 175 | 9 | 0.946 | 0.951 | 0.949 | 0.333
+fixed/delay | 183 | 183 | 0 | 0.948 | 1.000 | 0.973 | 0.333
+fixed/none | 183 | 183 | 0 | 0.948 | 1.000 | 0.973 | 0.333
+fixed/rate-limit | 183 | 183 | 0 | 0.948 | 1.000 | 0.973 | 0.333
+random/benign-mix | 183 | 177 | 6 | 0.947 | 0.967 | 0.957 | 0.333
+random/delay | 183 | 183 | 0 | 0.948 | 1.000 | 0.973 | 0.333
+random/none | 183 | 183 | 0 | 0.948 | 1.000 | 0.973 | 0.333
+random/rate-limit | 183 | 183 | 0 | 0.948 | 1.000 | 0.973 | 0.333
+
+# Per-workload FPR (legit traffic)
+A_factual_qa | windows=10 | fp=0 | fpr=0.000
+B_code_assistant | windows=10 | fp=0 | fpr=0.000
+C_doc_summary | windows=5 | fp=5 | fpr=1.000
+D_shared_cache_reuse | windows=5 | fp=5 | fpr=1.000

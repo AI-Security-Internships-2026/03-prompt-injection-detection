@@ -1,0 +1,1 @@
+lcp_thresh=0.1 mut_thresh=0.0 | TP=2174 FP=10 TN=20 FN=23 precision=0.995 recall=0.990 f1=0.992 fpr=0.333
