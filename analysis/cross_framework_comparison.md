@@ -7,9 +7,9 @@ has not been run (see docs/kv3-cross-framework-report.md).
 
 | Framework | Model | Cache Mode | Per-digit Accuracy | N | Notes |
 |---|---|---|---|---|---|
-| vllm | deepseek | disabled | 96.7% | 1800 | UNVERIFIED (pre-bugfix run) |
-| vllm | qwen | disabled | 0.0% | 1800 | UNVERIFIED (pre-bugfix run) |
-| vllm | deepseek | shared | 100.0% | 1800 |  |
+| vllm | deepseek | disabled | 12.2% | 1800 |  |
+| vllm | qwen | disabled | 12.2% | 1800 |  |
+| vllm | deepseek | shared | 97.8% | 1800 |  |
 | vllm | qwen | shared | 0.0% | 1800 |  |
 | vllm | deepseek | shared | 33.3% | 1800 | UNVERIFIED (pre-bugfix run) |
 | sglang | deepseek | disabled | 10.0% | 1800 |  |

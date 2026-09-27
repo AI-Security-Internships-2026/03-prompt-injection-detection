@@ -69,14 +69,6 @@ def is_unverified(path):
     base = os.path.basename(path)
     if (SGLANG_DIR in path) and (base.startswith("position_") or base.startswith("prefix_")):
         return True
-    # vLLM "disabled" files in the original kv3/ dataset: the report
-    # (docs/kv3-cross-framework-report.md, Section 1) established that
-    # run_level3_vllm.py's --cache-mode flag only labeled CSV rows; it never
-    # reconfigured the server. So every "disabled" row in this dataset was
-    # actually collected against a cache-ON server. Flag as UNVERIFIED so the
-    # comparison table does not present these as genuine disabled-mode results.
-    if (VLLM_DIR in path) and "disabled" in base:
-        return True
     # Anything left in kv3_v2 that isn't in EXCLUDE_EXACT hasn't been
     # individually provenance-traced the way the four excluded files were --
     # flag it rather than assume it's fine by omission.
