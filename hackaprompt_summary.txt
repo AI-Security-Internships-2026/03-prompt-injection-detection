@@ -1,0 +1,4 @@
+HackAPrompt Dataset - Quick Summary
+========================================
+Total rows : 601757
+Columns    : ['level', 'prompt', 'user_input', 'completion', 'model', 'expected_completion', 'token_count', 'correct', 'error', 'score', 'dataset', 'timestamp', 'session_id']

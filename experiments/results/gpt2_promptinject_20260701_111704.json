@@ -1,0 +1,7 @@
+{
+  "timestamp": "20260701_111704",
+  "target_type": "huggingface",
+  "target_name": "gpt2",
+  "probes": "promptinject",
+  "results": {}
+}

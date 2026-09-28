@@ -1,0 +1,44 @@
+{
+  "timestamp": "20260712_165957",
+  "model": "naive_bayes",
+  "training_sources": [
+    "hackaprompt",
+    "garak"
+  ],
+  "training_rows": 464312,
+  "test_rows": 116078,
+  "test_metrics": {
+    "accuracy": 87.1,
+    "precision": 54.92,
+    "recall": 25.12,
+    "f1_score": 34.48,
+    "confusion_matrix": {
+      "true_positives": 3938,
+      "true_negatives": 97171,
+      "false_positives": 3232,
+      "false_negatives": 11737
+    },
+    "n": 116078
+  },
+  "keyword_vs_ml": {
+    "keyword": {
+      "precision": 18.53,
+      "recall": 69.06,
+      "f1_score": 29.22
+    },
+    "ml": {
+      "precision": 54.92,
+      "recall": 25.12,
+      "f1_score": 34.48
+    },
+    "winner": "ml"
+  },
+  "garak_generalisation": {
+    "n": 437,
+    "ml_detected": 315,
+    "ml_detection_rate": 72.08,
+    "keyword_detected": 437,
+    "keyword_detection_rate": 100.0
+  },
+  "top_attack_terms": []
+}

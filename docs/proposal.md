@@ -1,6 +1,6 @@
 # Research Proposal: Prompt Injection Detection and Defence for LLM-Based Applications
 
-**Student:** _[Fill in your name]_
+**Student:**Ehsan Ullah Jamshaid
 **Supervisor:** _[Fill in supervisor name]_
 **Start date:** _[Fill in]_
 **Expected end date:** _[Fill in]_

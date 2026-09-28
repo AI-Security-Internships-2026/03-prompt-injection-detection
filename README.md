@@ -1,4 +1,4 @@
-# Prompt Injection Detection and Defence for LLM-Based Applications
+.venv\Scripts\activate# Prompt Injection Detection and Defence for LLM-Based Applications
 
 > **CNIT/PNTLab Pisa · TECIP · Scuola Superiore Sant'Anna — AI Security Internship 2026**
 
@@ -32,13 +32,18 @@ Investigate and build a robust detection layer that identifies prompt injection 
 
 ---
 
-## Recommended Technology Stack
+## Technology Stack
 
 ```
-Python, HuggingFace Transformers, scikit-learn, FastAPI, Pytest
+Python 3.14, scikit-learn, pandas, numpy, Pytest
+Optional: Groq (llm), Torch/Transformers/LLM-Guard (comparison), Garak (garak)
 ```
 
-See `requirements.txt` for pinned dependencies.
+Dependencies are declared authoritatively in `pyproject.toml`
+(`requires-python = ">=3.14,<3.15"`), with a reproducible lock in
+`requirements/constraints-python314.txt`. The deterministic detector and its
+offline tests need none of the optional groups. See
+[`reports/python-modernization.md`](reports/python-modernization.md).
 
 ---
 
@@ -76,26 +81,48 @@ Friday     – Open weekly Pull Request from your branch → dev
 
 ## Getting Started
 
+Requires **Python 3.14** (`winget install --id Python.Python.3.14 --scope user`).
+
 ```bash
-# 1. Clone the repository
+# 1. Clone
 git clone https://github.com/AI-Security-Internships-2026/03-prompt-injection-detection.git
 cd 03-prompt-injection-detection
 
-# 2. Create and activate a virtual environment
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+# 2. Bootstrap a local venv + install (Windows PowerShell)
+powershell -File scripts\bootstrap.ps1
+#   ...or manually:
+#   py -3.14 -m venv .venv
+#   .venv\Scripts\python -m pip install -e ".[dev]" -c requirements/constraints-python314.txt
 
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Create your weekly branch
-git checkout dev
-git pull origin dev
-git checkout -b your-name-week-01
-
-# 5. Run the starter script
-python src/main.py
+# 3. Run the offline test + static-analysis suite
+powershell -File scripts\test.ps1
+#   ...or: .venv\Scripts\python -m pytest
 ```
+
+### Notes for reviewers
+- The ML training/evaluation path is currently **blocked**: the committed model
+  artifact is not reproducible across scikit-learn versions and the training data
+  is missing. See [`reports/final-results.md`](reports/final-results.md).
+- `src/detection_utils.py` (deterministic pre-filter) is stdlib-only and runs
+  without Groq/Torch/Transformers/Garak/network.
+
+---
+
+## Roadmap to September 8, 2026
+
+**Current state:** ML detector benchmarked against Meta's Llama Prompt Guard and Protect AI's LLM Guard (PR #10, merged) — best speed/accuracy in that comparison, but weak on multilingual (4% recall) and encoded/obfuscated attacks (62%). Stale `Dev` PR (#4) should be closed (issue #12). A Phase 2 research assignment already exists (issue #11): KV-cache persistence as a multi-turn injection vector — this is the project's real novel-contribution track.
+
+**Novel contribution target:** the Phase 2 KV-cache work in issue #11 — most guardrails (including the ones just benchmarked) only look at a single turn. Showing an attack that persists across turns via the KV cache, and that current guardrails miss it, is a genuinely new result.
+
+| Date | Milestone |
+|---|---|
+| Aug 2 | Close stale PR #4; land any remaining single-turn detector fixes (multilingual/encoded coverage) |
+| Aug 9 | Phase 2 start (issue #11): reproduce basic KV-cache persistence/leakage behavior across conversation turns |
+| Aug 16 | Build a detection/mitigation approach targeting the multi-turn KV-cache vector specifically |
+| Aug 23 | Benchmark against the existing single-turn-only guardrails (LLM Guard, Prompt Guard) to show what they miss |
+| Aug 30 | Full write-up of the multi-turn KV-cache threat + mitigation — this is the standout result |
+| Sep 6 | Paper/report draft |
+| **Sep 8** | **Final submission** |
 
 ---
 
