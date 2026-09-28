@@ -1,0 +1,5 @@
+mode=shared concurrency=25 total_requests=500
+elapsed_s=48.18 throughput_req_s=10.38
+ttft_p50_ms=141.09 ttft_p95_ms=164.54 ttft_p99_ms=252.33
+total_p50_ms=2259.19 total_p95_ms=2338.39 total_p99_ms=2415.12
+cache_hit_rate=1.0
