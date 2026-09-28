@@ -1,0 +1,5 @@
+mode=isolated concurrency=1 total_requests=20
+elapsed_s=55.87 throughput_req_s=0.36
+ttft_p50_ms=163.10 ttft_p95_ms=165.28 ttft_p99_ms=165.28
+total_p50_ms=2635.23 total_p95_ms=2643.90 total_p99_ms=2643.90
+cache_hit_rate=1.0

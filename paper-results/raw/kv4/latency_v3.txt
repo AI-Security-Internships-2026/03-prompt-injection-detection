@@ -1,0 +1,14 @@
+# Detection latency (KV4 item 4)
+# variant | probes_to_alert | seconds_to_alert
+adaptive_adaptive_benign-mix | 20 | 4.927
+adaptive_adaptive_delay | 10 | 1.408
+adaptive_adaptive_none | 10 | 2.373
+adaptive_adaptive_rate-limit | 10 | 1.8607
+fixed/benign-mix | 10 | 1.7581
+fixed/delay | 10 | 1.0844
+fixed/none | 10 | 2.2746
+fixed/rate-limit | 10 | 1.3637
+random/benign-mix | 10 | 2.2636
+random/delay | 10 | 1.2833
+random/none | 10 | 2.3122
+random/rate-limit | 10 | 1.0368

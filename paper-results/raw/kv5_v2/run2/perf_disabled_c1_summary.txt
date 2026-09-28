@@ -1,0 +1,5 @@
+mode=disabled concurrency=1 total_requests=20
+elapsed_s=55.23 throughput_req_s=0.36
+ttft_p50_ms=150.07 ttft_p95_ms=152.58 ttft_p99_ms=152.58
+total_p50_ms=2615.51 total_p95_ms=2626.90 total_p99_ms=2626.90
+cache_hit_rate=0.0
