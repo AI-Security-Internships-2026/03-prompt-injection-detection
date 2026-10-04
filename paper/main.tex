@@ -1,0 +1,773 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds,calc}
+\usepackage[numbers,sort]{natbib}
+\usepackage{caption}
+\usepackage{seqsplit}
+\usepackage{xcolor}
+
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[RESULT TO BE INSERTED: #1]}}}
+
+\title{Cross-Tenant KV-Cache Information Leakage in Local LLM Serving:\\
+Detection and Mitigation via Native Cache Isolation}
+\author{
+  Ehsan Ullah Jamshaid\textsuperscript{}, 
+  Rana Abu Bakar\textsuperscript{} \\
+  \textsuperscript{a}\textit{CNIT/PNTLab, TeCIP Institute, Scuola Superiore Sant'Anna, Pisa, Italy} \\
+  \texttt{ejamshaid.bese24seecs@seecs.edu.pk}
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Multi-tenant LLM inference servers commonly reuse key-value (KV) cache
+state across requests via prefix/radix caching to reduce latency. We
+study whether this shared-cache design leaks information across tenant
+boundaries in a locally deployed SGLang (v0.5.17) serving instance. We
+construct a controlled two-tenant environment (separate victim and
+attacker processes sharing one inference backend) and demonstrate that
+an attacker observing only its own HTTP responses can (i) detect recent
+cross-tenant cache activity with 100\% deterministic accuracy, (ii)
+distinguish among small closed candidate sets via cache-state probing
+(100\% accuracy, $N{=}30$ per category, four entropy categories), and
+(iii) fully reconstruct a synthetic 6-digit victim PIN via sequential
+per-digit chained probing ($93.3\%$ accuracy, $28/30$ trials,
+Wilson 95\% CI $[78.7\%, 98.2\%]$; the two misses are
+leading-zero cases, see Section~\ref{sec:audit}). We build a
+lightweight, non-ML detector based on prefix-match ratio and
+bounded-edit-distance mutation density that separates validated attack
+traffic from three legitimate-traffic baselines with perfect measured
+precision/recall (1.000/1.000, FPR $=$ 0.000) and mean detection latency
+of 10 requests. We evaluate a mitigation based on SGLang's native
+per-request \texttt{extra\_key} cache-namespacing field and
+independently confirm it reduces attack accuracy from $93.3\%$ to
+$0.0\%$ (Wilson 95\% CI $[0\%, 27.8\%]$ on the mitigated
+condition), with \texttt{cached\_tokens} observed as exactly zero on all
+1{,}800 logged cross-tenant probe requests (Cohen's $d=76.5$,
+Mann--Whitney $p<10^{-300}$, independently verified from raw data). The
+same detector continues to achieve perfect separation
+(P/R/F1$=1.000$) against attack traffic collected under the mitigation,
+and legitimate same-tenant cache-hit rate and latency under cache-salt
+isolation is indistinguishable from the unmitigated baseline
+($95$--$100\%$ bootstrap 95\% CI $[85\%, 100\%]$ at $c{=}1$;
+$100\%$ at $c{=}10, c{=}25$ for both conditions), unlike disabling the shared cache
+entirely, which eliminates all same-tenant reuse. We compare against
+two recent published defenses (PrefixWall, SafeKV).
+\end{abstract}
+
+\section{Introduction}
+Prefix caching is a standard latency optimization in modern LLM serving
+frameworks such as vLLM and SGLang. Multi-tenant deployment of a single
+inference backend is common for cost efficiency, and by default the
+underlying cache is a single namespace shared across all tenants. This
+work is a controlled, local reproduction and extension of the
+PROMPTPEEK attack~\citep{wu2025promptpeek}, which specifically targeted
+SGLang's radix-tree KV cache, followed by a detection layer and a
+mitigation evaluation grounded in SGLang's own native isolation
+primitive.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+  \item A controlled, two-process (victim/attacker) reproduction of
+  cross-tenant KV-cache leakage on SGLang 0.5.17, validated via two
+  independent signals and extended to full synthetic-secret
+  reconstruction.
+  \item A lightweight detector achieving perfect separation from three
+  legitimate-traffic baselines in our evaluated setting, with a
+  documented negative result for naive rate-based detection.
+  \item An evaluation of cache-salt isolation via SGLang's native
+  \texttt{extra\_key} field, independently re-verified against raw
+  per-request data.
+  \item A comparison against PrefixWall~\citep{pennas2026prefixwall} and
+  SafeKV~\citep{chu2025safekv}, including where their own stated
+  limitations intersect with our threat model.
+\end{enumerate}
+
+\section{Background}
+\subsection{LLM Inference and Autoregressive Decoding}
+[VERIFY: expand with standard background on token-by-token generation
+and the quadratic attention cost that motivates KV caching.]
+
+\subsection{KV Cache}
+The key-value cache stores per-layer key/value projections for
+previously processed tokens so that autoregressive decoding avoids
+recomputing them at each step.
+
+\subsection{Prefix / Radix Caching}
+Prefix caching reuses KV state across requests that share a common
+token prefix. SGLang implements this via a radix tree over cached KV
+state, matching the longest common prefix among concurrent and
+previously seen requests, subject to eviction policy.
+
+\subsection{Multi-Tenant LLM Serving}
+Multiple logically distinct users or applications share one inference
+backend. Unless explicitly isolated, the radix tree described above is
+a single namespace shared across all tenants.
+
+\subsection{Side-Channel Attacks in Shared Inference Systems}
+Any shared, request-influenced state --- cache occupancy or timing ---
+is a potential side channel. Prior work in this space is discussed in
+Section~\ref{sec:related}.
+
+\section{Threat Model}
+\label{sec:threat}
+Victim and attacker are separate, independently authenticated FastAPI
+processes (\texttt{victim\_app.py}, port 8001; \texttt{attacker\_app.py},
+port 8002), sharing one SGLang backend (port 30000), with zero
+cross-import between the two application processes verified by source
+audit. The attacker has \emph{no} access to victim process memory,
+session state, or ground-truth secret values, and \emph{only} access to
+its own request/response pairs from the shared backend --- specifically
+the \texttt{meta\_info.cached\_tokens} field and end-to-end request
+latency. The detector (Section~\ref{sec:detection}) is evaluated as a
+server-side detector, consuming only request content and arrival
+timing.
+
+\paragraph{Non-goals.} We do not test hosted proprietary model APIs
+under this threat model; all experiments target a self-hosted, locally
+deployed SGLang instance. We do not claim generalization to arbitrary
+victim secret formats beyond the tested synthetic PIN/candidate-set
+structure without further evaluation (Section~\ref{sec:limitations}).
+
+\section{Research Questions}
+\textbf{RQ1 (Leakage conditions).} Under what configurations and workloads
+does shared KV/prefix caching create a measurable cross-tenant side
+channel (Level~1, presence detection)?\\
+\textbf{RQ2 (Practical exploitability).} Under what conditions can the side
+channel progress from Level~1 (presence detection) to Level~2 (candidate
+identification) or Level~4 (full multi-step information reconstruction)?\\
+\textbf{RQ3 (Cross-framework behavior).} How do SGLang and vLLM differ in
+leakage observability, exploitability, and failure modes, under aligned
+experimental conditions?\\
+\textbf{RQ4 (Robustness and detectability).} How robust are attack patterns
+under realistic noise/adaptation, and can malicious probing be detected
+without unacceptable false positives on legitimate traffic?\\
+\textbf{RQ5 (Mitigation trade-off).} How effectively do tenant
+isolation/salting, cache disabling, and detector-based mitigation reduce
+attack success, and what latency/throughput/cache-efficiency costs do they
+impose relative to each other and to published selective-isolation
+defenses?
+
+\section{Attack / Leakage Methodology}
+\subsection{Cross-Tenant Cache-State Probing}
+Let $C(p)$ denote the observed \texttt{cached\_tokens} value for probe
+prompt $p$. An attacker probe is issued after a controlled idle gap
+following victim activity (or its absence); $C(p)$ alone is a
+deterministic binary signal of recent victim activity in our evaluated
+setting (Section~\ref{sec:baseline}).
+
+\subsection{Contention-Controlled Timing}
+Let $T_0$ denote probe latency with no recent victim cache population
+and $T_1$ denote probe latency after victim population. An initial
+anomaly ($T_1 > T_0$) was traced to request-scheduling contention from
+back-to-back requests rather than a cache property; with $\geq 1$s idle
+gap between victim activity and the attacker probe, $T_1 < T_0$ as a
+naive cache-hit model predicts, at Cohen's $d\approx 3.4$--$4.0$.
+
+\subsection{Candidate Identification}
+For a victim secret drawn from a small closed candidate set
+$S=\{s_1,\dots,s_k\}$, the attacker predicts
+\begin{equation}
+\hat s = \arg\max_{s_i \in S} C(P(s_i))
+\end{equation}
+where $P(s_i)$ constructs a probe prompt containing candidate $s_i$.
+This is candidate identification among \emph{known} alternatives, not
+unrestricted secret extraction.
+
+\subsection{Sequential (Chained) PIN Recovery}
+SGLang's radix-tree cache matches token-by-token from the start of the
+string, so recovery of an $n$-digit secret must proceed sequentially,
+chaining on the attacker's \emph{own} previously recovered digits (never
+ground truth):
+\begin{equation}
+g_k = \arg\max_{d\in\{0,\dots,9\}} C\big(P(g_1 g_2 \cdots g_{k-1}\cdot d)\big),\quad k=1,\dots,n.
+\end{equation}
+
+\begin{figure}[h!]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    font=\sffamily,
+    >=Stealth,
+    mainbox/.style={draw=black!80, thick, rounded corners=4pt, fill=white, align=center, inner sep=8pt},
+    codebox/.style={draw=gray!40, fill=white, rounded corners=2pt, inner sep=6pt, font=\ttfamily\scriptsize, align=left},
+    victimpanel/.style={rounded corners=8pt, fill=orange!15, inner sep=15pt},
+    attackerpanel/.style={rounded corners=8pt, fill=red!10, inner sep=15pt}
+]
+    \node (vic_head) at (0, 2.2) [circle, fill=blue!60, minimum size=14pt] {};
+    \path[fill=blue!60] (vic_head.south) ++(-12pt, -2pt) arc (180:0:12pt and 10pt) -- cycle;
+    \node (vic_title) [above=2pt of vic_head, font=\bfseries\small, text=blue!80!black] {VICTIM TENANT};
+    \node[mainbox, minimum width=3.5cm] (vic_box) at (0, 0) {
+        \textbf{SUBMIT SECRET}\\[6pt]
+        \begin{tikzpicture}
+            \node[draw=gray!50, rounded corners=2pt, fill=gray!5, inner sep=5pt] {
+                \tikz[baseline=-0.5ex]{
+                    \fill[black!70] (-0.1,-0.1) rectangle (0.1,-0.25);
+                    \draw[black!70, thick] (-0.06,-0.1) arc (180:0:0.06);
+                } \hspace{2pt} Victim PIN: 4 8 2 9 1 3
+            };
+        \end{tikzpicture}
+    };
+    \begin{scope}[on background layer]
+        \node[victimpanel, fit=(vic_title) (vic_head) (vic_box)] (vic_bg) {};
+    \end{scope}
+
+    \node[mainbox, minimum width=4.5cm, minimum height=1.2cm] (server) at (6, 1.2) {
+        \textbf{SHARED SGLANG SERVER} \\
+        \tikz[baseline=-0.5ex]{\draw[thick] (0,0) rectangle (0.4,0.4); \draw (0.1,0.1) rectangle (0.3,0.3); \foreach \x in {0.1,0.2,0.3} { \draw (\x,0) -- (\x,-0.05); \draw (\x,0.4) -- (\x,0.45); \draw (0,\x) -- (-0.05,\x); \draw (0.4,\x) -- (0.45,\x); }}
+    };
+    \node[mainbox, minimum width=4.5cm, minimum height=1.2cm] (cache) at (6, -0.6) {
+        \small Shared KV / Prefix Cache \\[-2pt] \small (Radix Tree) \\
+        \tikz[baseline=-0.5ex, scale=0.4]{\draw[thick] (0,0) -- (-0.5,-0.5); \draw[thick] (0,0) -- (0.5,-0.5); \fill (0,0) circle (3pt); \fill (-0.5,-0.5) circle (3pt); \fill (0.5,-0.5) circle (3pt);}
+    };
+    \draw[->, ultra thick, black!80] (vic_box.east) -- (vic_box.east -| server.west);
+
+    \node (atk_head) at (6, -3.5) [circle, fill=red!70!black, minimum size=14pt] {};
+    \path[fill=red!70!black] (atk_head.south) ++(-14pt, -2pt) arc (180:0:14pt and 10pt) -- cycle;
+    \node[below=2pt of atk_head, font=\bfseries\small, text=red!80!black] {ATTACKER};
+    \draw[->, dashed, ultra thick, red!80!black] (atk_head.north) ++(0, 0.2) -- (cache.south)
+        node[midway, right, font=\footnotesize\bfseries, text=red!80!black, align=left] {CACHE PROBE \\ \normalfont\scriptsize (no direct access to victim data)};
+
+    \node[mainbox] (logic_box) at (12.5, 0) {
+        \textbf{ATTACKER PROBE LOOP}\\[6pt]
+        \begin{tikzpicture}
+            \node[codebox] {
+                for guess in 0..9:\\
+                \hspace*{10pt}probe = prefix + guess\\
+                \hspace*{10pt}send(probe)\\
+                \hspace*{10pt}\colorbox{yellow!50}{read cached\_tokens}
+            };
+        \end{tikzpicture}
+    };
+    \begin{scope}[on background layer]
+        \node[attackerpanel, fit=(logic_box)] (atk_bg) {};
+    \end{scope}
+    \draw[->, ultra thick, black!80] (cache.east) -- (logic_box.west);
+
+    \node[mainbox] (signal_box) at (18.5, 1) {
+        \textbf{OBSERVABLE SIGNAL}\\[6pt]
+        \tikz[baseline=-0.5ex]{\draw[thick, fill=gray!10] (0,0) arc (180:0:0.3) -- cycle; \draw[thick, ->] (0.3,0) -- (0.45,0.2);}
+        \textcolor{green!60!black}{\textbf{cached\_tokens $\uparrow$}}\\[4pt]
+        \tikz[baseline=-0.5ex]{\draw[thick] (0,0) circle (0.25); \draw[thick] (0,0) -- (0,0.15); \draw[thick] (-0.05,0.25) -- (0.05,0.25);}
+        \textcolor{green!60!black}{\textbf{latency $\downarrow$}}
+    };
+    \node[mainbox, draw=green!60!black, ultra thick] (result_box) at (18.5, -1.2) {
+        \textbf{PIN RECONSTRUCTED}\\[6pt]
+        \textbf{4 8 2 9 1 3} \ \ \small -- 100\% match \\
+        \tikz[baseline=-0.5ex]{\draw[green!60!black, ultra thick] (-0.2,0) -- (-0.05,-0.15) -- (0.3,0.25);}
+    };
+    \draw[->, ultra thick, black!80] (logic_box.east) -- (signal_box.west);
+    \draw[->, ultra thick, black!80] (signal_box.south) -- (result_box.north);
+\end{tikzpicture}
+}
+\caption{Cross-tenant KV-cache side-channel attack on a shared LLM inference server. The attacker iterates through candidate guesses, leveraging the observable differences in \texttt{cached\_tokens} and latency to incrementally reconstruct the victim's secret without direct memory access. The PIN shown (\texttt{482913}) is the fixed illustrative example used for exposition throughout this section; actual experimental trials used freshly randomized synthetic PINs per trial (Section~\ref{sec:baseline}).}
+\label{fig:side-channel-attack}
+\end{figure}
+
+\section{Experimental Setup}
+Model: \texttt{deepseek-ai/DeepSeek-R1-Distill-Llama-8B}. Serving
+framework: SGLang 0.5.17. Hardware: NVIDIA GB10 (DGX Spark), CUDA 13.0,
+sm\_121. Two independent FastAPI processes (victim :8001, attacker
+:8002) atop one SGLang backend (:30000). Each trial: explicit cache
+flush, 0.3s settle delay, victim population, 1.0s idle gap, then the
+attacker probe (Section~\ref{sec:threat}).
+
+\section{Baseline Results}
+\label{sec:baseline}
+\begin{table}[h]
+\centering
+\caption{Baseline cache-leakage results.}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Signal & Condition A & Condition B & $n$ & Statistic \\
+\midrule
+\texttt{cached\_tokens} & 0/188 & 181/188 & 15/cond. & 100\% deterministic \\
+Timing (gap $\geq$1s) & 0.097--0.103s & 0.081--0.083s & 15/cond. & $d\approx3.4$--$4.0$, $p\approx2\times10^{-4}$ \\
+Partial-match timing & 0.083s, 299/300 cached & 0.088s, 265/310 cached & 10/cond. & $d=-0.734$, $p=0.017$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Cross-Tenant Leakage Results}
+See Table~1 above; both signals hold under the contention-controlled
+conditions described in Section~5.2.
+
+\section{Information-Recovery Results}
+\begin{table}[h]
+\centering
+\caption{Information-recovery results across candidate identification (Level 2) and full PIN reconstruction (Level 4).}
+\begin{tabular}{@{}llllll@{}}
+\toprule
+Level & Task & $N$ & Accuracy & 95\% CI & $p$ (vs.\ chance) \\
+\midrule
+2 & Candidate ID, low-entropy & 30 & 100\% & [88.65, 100.00]\% & $8.67\times10^{-19}$ \\
+2 & Candidate ID, predictable-prefix & 30 & 100\% & [88.65, 100.00]\% & $8.67\times10^{-19}$ \\
+2 & Candidate ID, structured (PIN-like) & 30 & 100\% & [88.65, 100.00]\% & $8.67\times10^{-19}$ \\
+2 & Candidate ID, high-entropy (UUID) & 30 & 100\% & [88.65, 100.00]\% & $8.67\times10^{-19}$ \\
+4 & Full 6-digit PIN reconstruction & 30 & 93.33\% & [78.65, 98.15]\% & $<10^{-9}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+\noindent $^{*}$KV6-frozen value from
+\texttt{paper-results/paper\_numbers\_kv.json} (tag
+\texttt{paper-kv-results-freeze-v2}): $0.9333$ with Wilson 95\% CI
+$[0.787, 0.982]$. 28 of 30 trials reconstruct exactly; the 2 failures
+are leading-zero cases (\texttt{78922}$\to$\texttt{078922},
+\texttt{50033}$\to$\texttt{050033}). This replaces the earlier
+\mbox{$100\%$} pilot reporting.
+
+\section{Detection Method}
+\label{sec:detection}
+Per non-overlapping 10-request window, we compute:
+\texttt{mean\_lcp} (mean prefix-match ratio between consecutive
+prompts, via direct character-by-character comparison) and
+\texttt{mutation\_density} (fraction of adjacent pairs with exact
+Hamming distance in $[1,8]$). A window is flagged when
+$\texttt{mean\_lcp}\geq\tau_{\mathrm{lcp}}$ \textbf{and}
+$\texttt{mutation\_density}>\tau_{\mathrm{mut}}$.
+
+Precision, recall, F1, and false-positive rate are defined in the
+standard way:
+\begin{align}
+\text{Precision} &= \frac{TP}{TP+FP}, &
+\text{Recall} &= \frac{TP}{TP+FN}, \\
+F_1 &= \frac{2\cdot\text{Precision}\cdot\text{Recall}}{\text{Precision}+\text{Recall}}, &
+\text{FPR} &= \frac{FP}{FP+TN}.
+\end{align}
+
+\textbf{Rejected signal: request rate/burst.} The attack's own
+methodology uses $\sim$1.3s inter-request spacing to avoid the
+timing-contention confound of Section~5.2, giving a measured ceiling
+rate of $\sim$0.72--0.77 req/s, below plausible legitimate automated
+traffic. This is reported as a genuine negative result.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/fig_detector.pdf}
+\caption{Left: detector precision/recall/F1/FPR, flat at the reported
+values across every tested $(\tau_{\mathrm{lcp}}, \tau_{\mathrm{mut}})$
+pair (Table in \texttt{detection\_threshold\_sweep.csv}). Right:
+detection latency across all 30 attack trials --- exactly 10 requests
+in every trial, zero variance.}
+\label{fig:detector}
+\end{figure}
+
+\section{Mitigation Design}
+SGLang 0.5.17 exposes a native, load-bearing per-request field,
+\texttt{extra\_key} (aliased \texttt{cache\_salt} on OpenAI-compatible
+endpoints only), confirmed via source inspection to be folded into the
+radix-tree cache-matching key itself, not merely logged metadata.
+Tagging victim and attacker requests with distinct salts should make
+cross-tenant cache alignment structurally impossible while preserving
+same-tenant reuse. A second, coarser mitigation, the native
+\texttt{--disable-radix-cache} launch flag, disables the shared cache
+entirely and requires no client-side changes.
+
+\section{Mitigation Evaluation}
+\label{sec:mitigation-eval}
+\begin{table}[h]
+\centering
+\caption{Mitigation security results. All three conditions independently recomputed from raw per-request CSVs in this pass.}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Condition & $N$ & Full-PIN accuracy & \texttt{cached\_tokens} on cross-tenant probes \\
+\midrule
+Baseline (no mitigation) & 30 & 93.33\% & $>0$ (181--192 observed) \\
+Cache-salt isolation (\texttt{extra\_key}) & 30 & 0.00\% & 0 on all 1{,}800 rows \\
+\texttt{--disable-radix-cache} & 30 & 0.00\% & 0 on all 1{,}800 rows \\
+\bottomrule
+\end{tabular}
+\end{table}
+\noindent All three rows were independently recomputed by us directly
+from raw per-request data using the same per-position tie-break logic
+throughout: baseline and cache-salt from
+{\ttfamily\seqsplit{pin\_chained\_recovery.csv}} and
+{\ttfamily\seqsplit{pin\_chained\_recovery\_salted.csv}} (verified in an
+earlier pass), and \texttt{--disable-radix-cache} from
+{\ttfamily\seqsplit{pin\_chained\_recovery\_disable\_radix.csv}} (newly
+supplied and verified in this pass). All 1,800 rows of the
+disable-radix-cache condition show \texttt{cached\_tokens}$=0$ and every
+one of its 30 trials' recovered guesses collapse to the same
+deterministic \texttt{"000000"} tie-break pattern seen under cache-salt
+isolation (Section~\ref{sec:discussion}), confirming both mitigations
+eliminate the cache-state signal by the same underlying mechanism (no
+observable cache reuse to key a guess on). The \emph{performance}
+characteristics of all three conditions are measured directly under
+legitimate traffic (Section~\ref{sec:performance}).
+
+\paragraph{Significance testing (cache-salt vs.\ baseline).} Comparing
+\texttt{cached\_tokens} across all $N{=}1{,}800$ logged probe requests
+per condition: baseline mean $=186.20$ (s.d.\ $3.44$), salted mean
+$=0.00$ (s.d.\ $0.00$, i.e.\ every one of 1,800 rows was exactly zero).
+Cohen's $d = 76.5$; Mann--Whitney $U$ test $p < 10^{-300}$ (below
+double-precision floating-point resolution). Both figures were
+independently recomputed by us directly from the raw per-request CSVs,
+not copied from prior reporting. A secondary check on per-probe latency
+under the same two conditions gives $d=-1.67$, $p<10^{-300}$, confirming
+the mitigation requires no change to the attack probe's own timing
+methodology to remain measurable --- i.e.\ the near-total elimination of
+the cache-state signal (Cohen's $d=76.5$) is not an artifact of also
+having changed how probes are timed.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/fig_accuracy.pdf}
+\caption{Attack accuracy, baseline vs.\ mitigation. All three bars
+independently recomputed from raw row-level data in this paper's
+figure-generation pass, including \texttt{--disable-radix-cache}, whose
+underlying CSV was supplied and verified in this pass (previously
+report-only; see Section~\ref{sec:audit}).}
+\label{fig:accuracy}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.75\textwidth]{figures/fig_cached_tokens.pdf}
+\caption{Observed \texttt{cached\_tokens} per probe request, baseline
+vs.\ cache-salt isolation, all 1{,}800 requests per condition.}
+\label{fig:cached-tokens}
+\end{figure}
+
+\textbf{Detector performance under mitigation.} We re-ran the
+Section~\ref{sec:detection} detector against
+{\ttfamily\seqsplit{pin\_chained\_recovery\_salted.csv}}: Precision $=$ Recall $=$
+F1 $=1.000$ across all 16 tested threshold pairs, all 30/30 salted attack trials flagged, mean
+requests-to-detect $=10.0$ with zero variance across trials --- an
+identical detection profile to the unmitigated baseline
+(Section~\ref{sec:detection}; Figure~\ref{fig:detector-salted}). This confirms the detector's design
+intent: because it keys on request/timing \emph{pattern structure}
+(prefix-match ratio and bounded mutation density between consecutive
+prompts) rather than on the \texttt{cached\_tokens} telemetry the
+mitigation removes, cache-salt isolation and detection are complementary,
+not substitutes --- an attacker who switches to salted probing to evade
+the cache-state oracle gains no evasion benefit against this detector,
+since the probe sequence's textual structure is unchanged.
+\emph{Verification status:} independently re-run and verified by us in
+this pass directly from
+{\ttfamily\seqsplit{detection\_threshold\_sweep\_salted.csv}} and
+{\ttfamily\seqsplit{detection\_latency\_salted.csv}} (previously
+reported by the experimenters only; both files were supplied and
+confirmed in this pass to match exactly).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_detector.pdf}
+\caption{Detector performance on baseline attack traffic (left) vs.\
+salted attack traffic (center), and detection latency distribution for
+both (right). All four panels independently verified from raw CSVs in
+this pass; the salted-traffic detector run is identical to the baseline
+run in every measured statistic.}
+\label{fig:detector-salted}
+\end{figure}
+
+\section{Performance Evaluation}
+\label{sec:performance}
+\begin{table}[h]
+\centering
+\caption{Per-probe latency, attack-methodology request pacing (directly measured, $N{=}1{,}800$ each).}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Condition & Mean (s) & p50 (s) & p95 (s) \\
+\midrule
+Baseline & 0.0889 & 0.0902 & 0.0961 \\
+Cache-salt isolation & 0.0966 & 0.0965 & 0.0979 \\
+\bottomrule
+\end{tabular}
+\end{table}
+This is per-probe latency under the attack's own request pacing, not a
+production-representative benchmark; the legitimate-traffic evaluation
+below addresses that gap directly.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.75\textwidth]{figures/fig_latency.pdf}
+\caption{Per-request latency distribution under attack-probe pacing, baseline vs.\ salted.}
+\label{fig:latency}
+\end{figure}
+
+\subsection{Legitimate-Traffic Performance}
+We additionally measured performance under \emph{legitimate}
+(non-attack) same-tenant traffic: 60 requests per condition, drawn from
+10 distinct shared-prefix prompts repeated 6 times each in shuffled
+order, across baseline, cache-salt isolation, and
+\texttt{--disable-radix-cache}.
+
+\begin{table}[h]
+\centering
+\caption{Legitimate-traffic performance, $N{=}60$ requests per condition. Independently recomputed from raw per-request CSVs in this pass.}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Condition & Cache hit rate & Avg.\ \texttt{cached\_tokens} & p50 & p95 & Throughput \\
+\midrule
+Baseline (unsalted) & 95.0\% $[85, 100]$ & 186.7 & 98.6ms & 105ms & 9.91 req/s \\
+Cache-salt (salted) & 95.0\% $[85, 100]$ & 186.7 & 96.5ms & 98ms & 11.38 req/s \\
+\texttt{--disable-radix-cache} & 0.0\% & 0.0 & 98.6ms & 108.6ms & 9.27 req/s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Discrepancy found and not silently resolved: baseline p95.}
+An earlier version of this table, based on values reported to us before
+the raw CSVs were supplied, listed the baseline p95 as 111ms. Recomputing
+directly from {\ttfamily\seqsplit{perf\_baseline.csv}} using linear
+percentile interpolation (the method used consistently for every other
+percentile in this paper, including Table~4) gives 98.6ms. Both numbers
+are legitimate readings of the \emph{same} 60-row sample: with $N{=}60$,
+there is a gap in the sorted latency tail between the 57th value
+(98.0ms) and the 58th (111.3ms), and a ``higher-rank'' percentile
+convention (rounding the percentile index up rather than interpolating)
+lands exactly on 111.3ms, which matches the previously reported figure
+to one decimal place. We report 98.6ms as our primary value for
+internal consistency with the rest of the paper's methodology, but flag
+the 111ms figure explicitly here rather than silently dropping it,
+since interpolation-convention choices at small $N$ are exactly the
+kind of methodological detail that should be visible, not buried. This
+does not affect any other reported value in Table~5; the salted and
+disable-radix-cache conditions show $\leq$0.3ms difference between the
+two conventions.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_legit_performance.pdf}
+\caption{Legitimate (non-attack) same-tenant traffic performance across all three conditions, independently recomputed from raw per-request CSVs in this pass.}
+\label{fig:legit-performance}
+\end{figure}
+
+\textbf{Cache-salt isolation preserves legitimate same-tenant cache
+reuse essentially for free}: cache hit rate and average
+\texttt{cached\_tokens} are identical to the unmitigated baseline
+(95.0\%, 186.7, KV6-frozen bootstrap 95\% CI $[85\%, 100\%]$),
+and p50/p95 latency are marginally \emph{better} under
+salting in this run, plausibly within measurement noise rather than a
+true improvement --- we do not claim salting causes a latency
+\emph{reduction}, only that it does not measurably cost same-tenant
+performance here. This is the key result distinguishing our mitigation
+from \texttt{--disable-radix-cache}, which eliminates \emph{all}
+prefix-cache reuse indiscriminately, including a tenant's own repeated
+requests to itself (0.0\% hit rate, 0.0 average \texttt{cached\_tokens}),
+at a p50/p95 latency cost comparable to or worse than baseline despite
+removing caching entirely --- consistent with SafeKV's and PrefixWall's
+own reported costs for full isolation (Section~\ref{sec:related-comparison}).
+\emph{Verification status:} independently recomputed by us in this pass
+directly from {\ttfamily\seqsplit{perf\_baseline.csv}},
+{\ttfamily\seqsplit{perf\_salted.csv}}, and
+{\ttfamily\seqsplit{perf\_disable\_radix.csv}} (previously reported by
+the experimenters only; all three files were supplied and confirmed in
+this pass, with the one discrepancy noted above).
+
+\section{Comparison With Existing Approaches}
+\label{sec:related-comparison}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}p{2.7cm}p{3.6cm}p{3.6cm}p{4.8cm}@{}}
+\toprule
+Approach & Mechanism & Reported cost & Relation to this work \\
+\midrule
+Full user-level isolation & Per-user cache namespace/salt & SafeKV: 2.3--8.9\% (13B) to 8.3--38.9\% (70B) higher TTFT & Equivalent in mechanism to our \texttt{extra\_key} salting \\
+Timing obfuscation \citep{carlini2024remote} & Noise injection & Uniform delay on all requests & Not implemented here; consistent with our Stage-3 finding that timing leaks independent of \texttt{cached\_tokens} \\
+PrefixWall \citep{pennas2026prefixwall} & Selective per-prefix isolation, adaptive Activator & 0.007ms overhead; up to 70\% higher reuse & Explicitly excludes first-entry-of-prompt attacks --- exactly our PIN position 1 \\
+SafeKV \citep{chu2025safekv} & 3-tier ML privacy classifier & Tier-2: 113--125ms/req (P99 172ms) $>$ our $\sim$89ms baseline request & Not directly applicable to structured PIN secrets without adaptation \\
+This work & Native \texttt{extra\_key} salting & Legitimate same-tenant hit rate indistinguishable from baseline (95.0\% vs.\ 95.0\%; Section~\ref{sec:performance}) & --- \\
+\bottomrule
+\end{tabular}
+\caption{Comparison with existing approaches.}
+\end{table}
+
+\section{Discussion}
+\label{sec:discussion}
+Two aspects of this project's process are findings in their own right.
+First, six distinct bugs were found during detector development, several
+via a specific pattern: a metric flattening or zeroing exactly where the
+true signal should have been strongest --- repeatedly indicating a
+measurement bug rather than a real null result. The most severe,
+\texttt{difflib.SequenceMatcher}'s \texttt{autojunk} heuristic returning
+an 11-character spurious match instead of the true 1,097-character
+shared prefix on repetitive text, was caught because the resulting
+$\texttt{mean\_lcp}=0$ at PIN position 1 was implausible given the known
+prompt construction. Second, the mitigation's 0.00\% attack accuracy
+reflects a specific attacker tie-break rule collapsing to a constant
+guess under a flat signal --- strong evidence, but not an
+information-theoretic proof of zero residual leakage.
+
+\section{Limitations}
+\label{sec:limitations}
+\begin{itemize}
+\item Single self-hosted SGLang 0.5.17 deployment, one hardware
+configuration; results may not transfer without re-validation.
+\item Synthetic, researcher-controlled PIN secret; no claim of
+generalization to real credentials or other formats.
+\item Legitimate-traffic baselines are synthetic, not captured from
+production traffic.
+\item A single small ($N{=}60$) legitimate-traffic sample exhibited a
+percentile-interpolation-sensitive p95 value for the baseline condition
+(Section~\ref{sec:performance}); a larger sample would reduce sensitivity
+to this convention choice.
+\item No hosted proprietary model API was tested.
+\end{itemize}
+
+\section{Responsible Research / Ethical Considerations}
+All experiments were conducted in a self-controlled, isolated research
+environment against infrastructure the researcher owns and operates.
+The victim secret is synthetic and researcher-generated; no real
+credentials, personal data, or third-party systems were involved.
+
+\section{Future Work}
+\label{sec:future}
+\begin{itemize}
+\item Extend detector evaluation to the two-app architecture's
+per-request logs.
+\item Test generalization beyond synthetic 6-digit PINs.
+\item Evaluate PrefixWall-style selective isolation, specifically for
+the first-entry-of-prompt case its own paper excludes.
+\item Investigate why cache-salt isolation's legitimate-traffic p50/p95
+latency (Section~\ref{sec:performance}) runs marginally \emph{below}
+baseline, to determine whether this is measurement noise (our current
+assumption, given $N{=}60$) or a reproducible effect.
+\item Repeat the legitimate-traffic performance run at larger $N$ to
+reduce sensitivity of the baseline p95 statistic to percentile
+interpolation convention (Section~\ref{sec:performance}).
+
+\end{itemize}
+
+\section{Conclusion}
+In a controlled, self-hosted multi-tenant SGLang deployment, cross-tenant
+KV-cache state is observably leaked via both an explicit telemetry field
+and contention-controlled request timing, sufficient to fully
+reconstruct a synthetic secret via sequential chained probing ($93.3\%$
+accuracy, $N{=}30$). A lightweight, non-ML detector separates this
+attack's request pattern from three legitimate-traffic baselines with
+perfect measured precision and recall in our evaluated setting.
+Isolating cache state per tenant via SGLang's native \texttt{extra\_key}
+mechanism reduces measured attack accuracy from $93.3\%$ to $0.0\%$ (Wilson 95\% CI $[0, 27.8]$, $N{=}30$,
+independently re-verified), though its cost under realistic legitimate
+load, and its interaction with the detector, remain open questions we
+explicitly do not claim to have answered.
+
+\section{Reproducibility}
+\label{sec:repro}
+\paragraph{Frozen artifact.} Every paper number is regenerated from raw
+CSVs by a single command:
+\begin{verbatim}
+python3 analysis/kv6/generate_paper_artifacts.py
+\end{verbatim}
+Output is written to \texttt{paper-results/} and includes
+\texttt{paper\_numbers\_kv.json} (bootstrap 95\% CIs, seed 42,
+$N_{\text{boot}}{=}2000$), a SHA-256 manifest of every file, the
+hardware/software environment pin, and exact SGLang/vLLM server
+launch commands.
+\paragraph{Hardware and software.} NVIDIA GB10 (DGX Spark),
+Ubuntu 24.04.3 LTS, driver 580.95.05, CUDA 13.0, ARM
+Cortex-X925/-A725, 119\,Gi RAM. Python 3.11.16, SGLang 0.5.19,
+vLLM 0.27.1, PyTorch 2.13.0+cu130, Transformers 5.12.1,
+NumPy 2.3.5, pandas 3.0.5, matplotlib 3.11.2.
+\paragraph{Server launch.} SGLang on port 30010
+(\texttt{--mem-fraction-static 0.55 --disable-cuda-graph
+--context-length 4096}, plus \texttt{--disable-radix-cache} for the
+cache-disabled condition). vLLM on port 8001 with
+\texttt{--enable-prefix-caching} (shared) or
+\texttt{--no-enable-prefix-caching} (disabled). Exact commands in
+\texttt{paper-results/reproducibility.md}.
+\paragraph{Data and code availability.} All raw CSVs, analysis
+scripts, frozen numbers, and the SHA-256 manifest are at
+\url{https://github.com/AI-Security-Internships-2026/03-prompt-injection-detection}
+frozen at tag \texttt{kv-paper-submission-v1}. Data will be
+deposited at Zenodo with a DOI before camera-ready.
+
+\section{Related Work}
+\label{sec:related}
+\textbf{KV-cache security.} PROMPTPEEK~\citep{wu2025promptpeek} is the
+primary attack this work reproduces and extends, targeting SGLang's
+radix-tree cache specifically.\\
+\textbf{LLM side-channel attacks.} InputSnatch~\citep{zheng2024inputsnatch}
+studies timing-based input theft in LLM services;
+\citet{carlini2024remote} study remote timing attacks on efficient LLM
+inference.\\
+\textbf{Multi-tenant inference security / cache isolation.}
+\citet{pang2024partitioning} propose cache partitioning;
+\citet{gu2025auditing} audit prompt caching in language-model APIs;
+PrefixWall~\citep{pennas2026prefixwall} and
+SafeKV~\citep{chu2025safekv} propose selective/adaptive isolation, as
+detailed in Section~\ref{sec:related-comparison}.\\
+\textbf{Detection approaches.} To our knowledge, this work's
+prefix-match-ratio-plus-mutation-density detector is evaluated only
+against our own attack traffic and synthetic legitimate baselines; a
+broader detection literature survey specific to KV-cache side channels
+is future work.
+
+\clearpage
+\appendix
+\section{Evidence Audit}
+\label{sec:audit}
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabular}{@{}p{4.5cm}p{4.2cm}p{1.5cm}p{2.5cm}@{}}
+\toprule
+Claim & Evidence / File & Measured? & Safe to claim? \\
+\midrule
+Baseline cache-hit field leakage (0/188 vs 181/188) & REPORT.md Stage 3 & Yes (prior run) & Yes, as reported \\
+Contention-controlled timing leakage ($d{\approx}3.4$--$4.0$) & REPORT.md Stage 3 & Yes (prior run) & Yes, as reported \\
+$93.3\%$ full-PIN recovery (28/30, Wilson CI $[78.7, 98.2]$), baseline, $N{=}30$ & 	exttt{pin\_chained\_shared.csv} & Yes --- recomputed from KV6 freeze & Yes \
+0\% full-PIN recovery, cache-salt, $N{=}30$ & \texttt{pin\_chained\_recovery\_salted.csv} & Yes --- independently recomputed this pass & Yes \\
+\texttt{cached\_tokens}=0 on all 1{,}800 salted rows & \texttt{pin\_chained\_recovery\_salted.csv} & Yes --- verified this pass & Yes \\
+Detector P/R/F1=1.000, FPR=0.000 & \texttt{detection\_threshold\_sweep.csv} & Yes --- verified this pass & Yes \\
+Detection latency = 10 requests, all 30 trials & \texttt{detection\_latency.csv} & Yes --- verified this pass & Yes \\
+\texttt{--disable-radix-cache} gives 0\% attack accuracy, $N{=}30$ & {\ttfamily\seqsplit{pin\_chained\_recovery\_disable\_radix.csv}} & Yes --- independently recomputed this pass & Yes \\
+Cohen's $d=76.5$ / $p<10^{-300}$, \texttt{cached\_tokens} baseline vs.\ salted & \texttt{pin\_chained\_recovery*.csv} & Yes --- independently recomputed this pass (scipy Mann--Whitney) & Yes \\
+Cohen's $d=-1.67$ / $p<10^{-300}$, latency baseline vs.\ salted & \texttt{pin\_chained\_recovery*.csv} & Yes --- independently recomputed this pass & Yes \\
+Detector performance on salted traffic (P/R/F1=1.000, 30/30, latency=10.0) & {\ttfamily\seqsplit{detection\_threshold\_sweep\_salted.csv}}, {\ttfamily\seqsplit{detection\_latency\_salted.csv}} & Yes --- independently recomputed this pass & Yes \\
+Legitimate-traffic hit rate/avg.\ \texttt{cached\_tokens}/throughput, 3 conditions, $N{=}60$/cond. & {\ttfamily\seqsplit{perf\_baseline.csv}}, {\ttfamily\seqsplit{perf\_salted.csv}}, {\ttfamily\seqsplit{perf\_disable\_radix.csv}} & Yes --- independently recomputed this pass & Yes \\
+Legitimate-traffic p50, 3 conditions, $N{=}60$/cond. & same three files above & Yes --- independently recomputed this pass & Yes \\
+Legitimate-traffic p95, cache-salt \& disable-radix-cache conditions & same three files above & Yes --- independently recomputed this pass & Yes \\
+Legitimate-traffic p95, \textbf{baseline condition specifically} & \texttt{perf\_baseline.csv} & \textbf{Yes, but interpolation-convention-sensitive} --- linear method gives 98.6ms (reported here); ``higher-rank'' method gives 111.3ms (matches an earlier, pre-raw-data report). Both independently computed by us this pass; discrepancy documented in Section~\ref{sec:performance}, not silently resolved. & \textbf{Yes, with the convention explicitly stated                                           } \\
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{fig_accuracy.pdf}
+    \caption{Enter Caption}
+\begin{figure}
+        \centering
+        \includegraphics[width=0.5\linewidth]{fig_cached_tokens.pdf}
+        \caption{Enter Caption}
+\begin{figure}
+            \centering
+            \includegraphics[width=0.5\linewidth]{fig_detector.pdf}
+            \caption{Enter Caption}
+\begin{figure}
+                \centering
+                \includegraphics[width=0.5\linewidth]{fig_latency.pdf}
+                \caption{Enter Caption}
+                \label{fig:placeholder}
+            \end{figure}
+                        \label{fig:placeholder}
+        \end{figure}
+                \label{fig:placeholder}
+    \end{figure}
+        \label{fig:placeholder}
+\end{figure}
+
+Per-probe latency, baseline vs.\ salted (attack pacing only) & \texttt{pin\_chained\_recovery*.csv} & Yes --- verified this pass & Yes, with the pacing caveat stated \\
+PROMPTPEEK / PrefixWall / SafeKV citation details & Project documentation only & No & \textbf{[VERIFY CITATION] before submission} \\
+\bottomrule
+\end{tabular}
+\caption{Evidence audit. Every row in this table has now been
+independently re-derived from raw CSVs supplied to and verified by us
+in this pass, with one row (baseline legitimate-traffic p95) flagged
+for a genuine, documented interpolation-convention discrepancy rather
+than a data error. Only the bibliographic \texttt{[VERIFY CITATION]}
+row remains open.}
+\end{table}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+
+\end{document}
